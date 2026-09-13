@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2A0E4F">
+<title>YDT Deneme Sınavları · Royal British Academy</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--night:#2A0E4F;--night-2:#3D1A6E;--parchment:#F7F3EA;--paper:#fff;
+  --lion:#6B3FA0;--lion-dark:#502D7A;--gilt:#D9C293;--ink:#16202E;--muted:#5E6B7C;--line:#DFD8CA;
+  --safe-b:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--parchment);color:var(--ink);min-height:100dvh;line-height:1.65}
+.serif{font-family:Georgia,"Iowan Old Style",serif}
+.wrap{max-width:620px;margin:0 auto;padding:0 20px}
+a{color:inherit;text-decoration:none}
+.hero{background:linear-gradient(170deg,var(--night),var(--night-2));color:#F2EDE3;
+  padding:calc(34px + env(safe-area-inset-top,0px)) 0 32px;border-radius:0 0 26px 26px;
+  position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;
+  background:linear-gradient(90deg,var(--gilt),var(--lion),var(--gilt))}
+.hero-in{display:flex;gap:15px;align-items:center}
+.crest{width:70px;height:70px;flex:0 0 70px;border-radius:17px;padding:5px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(201,162,39,.45)}
+.crest svg{width:100%;height:100%;display:block}
+.k{font-size:11px;letter-spacing:2.2px;text-transform:uppercase;color:var(--gilt);font-weight:700}
+h1{font-size:25px;margin:7px 0 5px;font-weight:600;line-height:1.2}
+.sub{font-size:13.5px;color:#B9C6D6}
+.cards{display:grid;gap:13px;margin-top:24px}
+.card{display:block;background:var(--paper);border:1px solid var(--line);border-radius:15px;
+  padding:19px;transition:border-color .15s,transform .08s}
+.card:active{transform:scale(.99)}
+.card:hover{border-color:var(--lion)}
+.card .t{font-size:18px;font-weight:650;margin-bottom:5px}
+.card .d{font-size:14px;color:var(--muted)}
+.card .go{color:var(--lion);font-weight:650;font-size:14.5px;margin-top:10px;display:block}
+.card.ana{border-left:5px solid var(--lion)}
+.sec{margin-top:28px}
+.sec h2{font-size:16px;margin-bottom:11px}
+.mini{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:16px;
+  font-size:14px;line-height:1.7}
+.mini b{color:var(--ink)}
+.ozet{background:#F3EEF9;border:1px solid #DDD0EE;border-radius:13px;padding:15px;
+  font-size:14px;line-height:1.7;margin-bottom:11px}
+details{background:var(--paper);border:1px solid var(--line);border-radius:13px;
+  padding:14px 16px;margin-top:10px}
+details summary{cursor:pointer;font-weight:650;font-size:14.5px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:" ＋";color:var(--lion)}
+details[open] summary::after{content:" －"}
+details .gvd{margin-top:11px;font-size:14px;line-height:1.7}
+details .gvd h3{font-size:14.5px;color:var(--lion-dark);margin:14px 0 4px}
+footer{margin-top:32px;padding:22px 0 calc(26px + var(--safe-b));
+  border-top:1px solid var(--line);text-align:center}
+footer .b{font-size:13.5px;font-weight:650}
+footer .by{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
+footer .by b{color:var(--ink)}
+.ogrt{text-align:center;margin-top:16px}
+.ogrt a{font-size:13px;color:var(--muted);text-decoration:underline}
+</style>
+</head>
+<body>
+
+<div class="hero"><div class="wrap hero-in">
+  <div class="crest">
+    <svg viewBox="0 0 100 100" role="img" aria-label="Royal British Academy arması">
+      <defs><linearGradient id="m" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#E3D0A4"/><stop offset="1" stop-color="#C9AE78"/></linearGradient></defs>
+      <path d="M50 4 L86 16 v34c0 22-15 36-36 46C29 86 14 72 14 50V16z" fill="none"
+        stroke="#D9C293" stroke-width="3.4" stroke-linejoin="round"/>
+      <g fill="url(#m)"><circle cx="50" cy="46" r="24"/>
+        <path d="M50 17 L54 26 L46 26Z"/><path d="M71 24 L72 34 L63 29Z"/><path d="M29 24 L37 29 L28 34Z"/>
+        <path d="M78 41 L70 45 L75 34Z"/><path d="M22 41 L25 34 L30 45Z"/>
+        <path d="M77 57 L69 55 L74 65Z"/><path d="M23 57 L26 65 L31 55Z"/>
+        <path d="M50 75 L45 66 L55 66Z"/><path d="M65 71 L59 65 L69 61Z"/><path d="M35 71 L31 61 L41 65Z"/></g>
+      <ellipse cx="50" cy="47" rx="15.5" ry="17" fill="#F7F3EA"/>
+      <circle cx="38" cy="34" r="4.4" fill="#F7F3EA"/><circle cx="62" cy="34" r="4.4" fill="#F7F3EA"/>
+      <circle cx="44" cy="44" r="2.4" fill="#16202E"/><circle cx="56" cy="44" r="2.4" fill="#16202E"/>
+      <path d="M46 52 h8 l-4 5Z" fill="#502D7A"/>
+      <path d="M50 57 v3.5 M50 60.5 q-4 3.5-8 .5 M50 60.5 q4 3.5 8 .5" stroke="#502D7A" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div>
+    <div class="k">Royal British Academy</div>
+    <h1 class="serif">YDT Deneme Sınavları</h1>
+    <div class="sub">KeyKampüs Kurs Merkezi · YKS Yabancı Dil Testi</div>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+  <div class="cards">
+    <a class="card ana" href="ydt-deneme-pwa.html">
+      <div class="t">Sınava gir</div>
+      <div class="d">Öğretmeninin açtığı denemeyi çöz, sonucunu ve çalışman gereken
+        konuları hemen gör.</div>
+      <span class="go">Başla →</span>
+    </a>
+  </div>
+
+  <div class="sec">
+    <h2 class="serif">Sınav nasıl işliyor?</h2>
+    <div class="mini">
+      <b>80 soru · 120 dakika.</b> Gerçek YDT ile aynı bölümler ve aynı süre.<br>
+      <b>4 yanlış 1 doğruyu götürür.</b> Süre dolduğunda sınav olduğu hâliyle değerlendirilir.<br>
+      <b>Sorular arasında ileri geri gidebilirsin,</b> cevabını değiştirebilir, emin olmadıklarını
+      işaretleyip sona doğru dönebilirsin.<br>
+      <b>İnternet kesilse bile sınav devam eder.</b> Cihazın kapanırsa kaldığın yerden sürer.
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2 class="serif">Kişisel verilerin</h2>
+    <div class="ozet">
+      Adın bu cihazda <b>şifrelenir</b> ve sunucuya düz hâliyle hiç gönderilmez. Şifreyi çözebilen
+      anahtar yalnızca öğretmenindedir. Sonuçlarını başka öğrenciler göremez, kimseyle paylaşılmaz.
+      İstediğinde silinmesini isteyebilirsin.
+    </div>
+    <details id="kvkkKutu">
+      <summary>Aydınlatma metninin tamamını oku</summary>
+      <div class="gvd" id="kvkkGvd"></div>
+    </details>
+  </div>
+
+  <div class="ogrt">
+    <a href="ydt-ogretmen.html">Öğretmen paneli</a>
+  </div>
+
+  <footer>
+    <div class="b serif">Royal British Academy · KeyKampüs Kurs Merkezi</div>
+    <div class="by">by <b>Ajlan Abudak</b><br>İngilizce Öğretmeni · Eğitim Teknolojisi Uzmanı</div>
+  </footer>
+</div>
+
+<script src="kvkk.js"></script>
+<script>
+(function(){
+  var A = window.YDT_KVKK && window.YDT_KVKK.AYDINLATMA;
+  var el = document.getElementById('kvkkGvd');
+  if(!A || !el){ return; }
+  el.innerHTML = A.metin.map(function(p){
+    return '<h3>'+p[0]+'</h3><div>'+p[1]+'</div>';
+  }).join('') + '<div style="margin-top:14px;font-size:12.5px;color:var(--muted)">'+
+    'Sürüm '+A.surum+' · '+A.kurum+'</div>';
+})();
+</script>
+</body>
+</html>

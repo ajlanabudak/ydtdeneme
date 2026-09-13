@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2A0E4F">
+<title>Öğretmen Paneli · YDT Deneme</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="rehber.js"></script>
+<script src="kvkk.js"></script>
+<style>
+:root{
+  --night:#2A0E4F; --night-2:#3D1A6E; --parchment:#F7F3EA; --paper:#fff;
+  --lion:#6B3FA0; --lion-dark:#502D7A; --gilt:#D9C293;
+  --ink:#16202E; --muted:#5E6B7C; --line:#DFD8CA;
+  --good:#4F7A5B; --bad:#B3402F; --warn:#C9862A;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--parchment);color:var(--ink);min-height:100dvh;line-height:1.5}
+.serif{font-family:Georgia,"Iowan Old Style",serif}
+button,input,select,textarea{font-family:inherit;font-size:15px}
+button{border:none;background:none;cursor:pointer;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+.screen{display:none}.screen.on{display:block}
+:focus-visible{outline:3px solid var(--lion);outline-offset:2px;border-radius:6px}
+
+/* giriş */
+#login{display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:20px}
+.lcard{background:var(--paper);border:1px solid var(--line);border-radius:16px;
+  padding:28px;max-width:400px;width:100%;box-shadow:0 6px 24px rgba(42,14,79,.1)}
+.lcard h1{font-size:21px;margin-bottom:4px}
+.lcard .sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+.f{margin-bottom:13px}
+.f label{display:block;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:5px}
+.f input{width:100%;padding:12px 13px;border:1.5px solid var(--line);border-radius:10px;background:var(--parchment)}
+.f input:focus{border-color:var(--lion);outline:none;background:#fff}
+.btn{padding:13px 20px;border-radius:11px;font-weight:650;min-height:48px}
+.btn-fill{background:var(--lion);color:#fff}.btn-fill:hover{background:var(--lion-dark)}
+.btn-line{background:var(--paper);border:1.5px solid var(--line)}
+.btn-sm{padding:8px 13px;min-height:40px;font-size:13.5px;border-radius:9px}
+.err{color:var(--bad);font-size:13px;margin-top:10px}
+
+/* üst bar */
+.top{background:var(--night);color:#F2EDE3;padding:calc(12px + env(safe-area-inset-top,0px)) 0 12px;
+  position:sticky;top:0;z-index:30}
+.top .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:17px;flex:1;min-width:150px}
+.top .who{font-size:12.5px;color:#B9C6D6}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 0;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;padding:9px 15px;border-radius:9px;background:rgba(255,255,255,.08);
+  color:#DCE4EE;font-size:13.5px;font-weight:600}
+.tab.on{background:var(--lion);color:#fff}
+
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.panel h2{font-size:16px;margin-bottom:4px}
+.panel .hint{font-size:13px;color:var(--muted);margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click:hover{background:var(--parchment);cursor:pointer}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.sw{position:relative;width:52px;height:30px;flex:0 0 52px}
+.sw input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.sw span{position:absolute;inset:0;background:#CFC8BA;border-radius:15px;transition:background .15s;pointer-events:none}
+.sw span::after{content:"";position:absolute;width:24px;height:24px;border-radius:50%;
+  background:#fff;top:3px;left:3px;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw input:checked + span{background:var(--good)}
+.sw input:checked + span::after{transform:translateX(22px)}
+
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:3px 8px;
+  text-transform:uppercase;letter-spacing:.5px}
+.pill.on{background:#E3EFE5;color:var(--good)}
+.pill.off{background:#EFE9DE;color:var(--muted)}
+.bar{background:#EDE7DB;border-radius:5px;height:8px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;border-radius:5px;background:var(--good)}
+.bar i.mid{background:var(--warn)}.bar i.low{background:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:6px}
+.kpi{background:var(--parchment);border:1px solid var(--line);border-radius:11px;padding:12px}
+.kpi b{display:block;font-size:23px;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kpi.good b{color:var(--good)}.kpi.bad b{color:var(--bad)}.kpi.lion b{color:var(--lion)}
+.row2{display:grid;gap:14px}
+@media(min-width:860px){.row2{grid-template-columns:1fr 1fr}}
+.note{font-size:13px;color:var(--muted);line-height:1.65}
+.empty{padding:26px;text-align:center;color:var(--muted);font-size:14px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters select,.filters input{padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;
+  background:var(--parchment);font-size:13.5px}
+.modal{position:fixed;inset:0;z-index:50;display:none}
+.modal.on{display:block}
+.modal-bg{position:absolute;inset:0;background:rgba(42,14,79,.55)}
+.modal-in{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:var(--parchment);border-radius:16px;width:min(700px,94vw);max-height:88dvh;
+  overflow:auto;padding:18px}
+.tag{display:inline-block;background:var(--night);color:var(--gilt);font-size:10.5px;
+  font-weight:700;letter-spacing:.8px;text-transform:uppercase;border-radius:6px;padding:3px 8px}
+footer{padding:26px 0 calc(26px + var(--safe-b));text-align:center;border-top:1px solid var(--line);margin-top:26px}
+footer .brand{font-size:13px;font-weight:650}
+footer .by{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--night);
+  color:#F2EDE3;padding:12px 18px;border-radius:11px;font-size:14px;z-index:60;display:none}
+.toast.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- GİRİŞ -->
+<section id="login" class="screen on">
+  <form class="lcard" onsubmit="event.preventDefault();signIn()">
+    <h1 class="serif">Öğretmen Paneli</h1>
+    <div class="sub">Royal British Academy · KeyKampüs Kurs Merkezi</div>
+    <div class="f"><label>E-posta</label><input id="email" type="email" autocomplete="username" required></div>
+    <div class="f"><label>Şifre</label><input id="pass" type="password" autocomplete="current-password" required></div>
+    <button class="btn btn-fill" style="width:100%" type="submit">Giriş yap</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</section>
+
+<!-- PANEL -->
+<section id="app" class="screen">
+  <div class="top"><div class="wrap">
+    <h1 class="serif">YDT Deneme · Öğretmen Paneli</h1>
+    <span class="who" id="whoBox"></span>
+    <button class="btn btn-sm btn-line" style="color:#16202E" onclick="signOut()">Çıkış</button>
+    <div class="tabs" style="flex-basis:100%">
+      <button class="tab on" data-t="denemeler" onclick="tab('denemeler')">Denemeler</button>
+      <button class="tab" data-t="sonuclar"  onclick="tab('sonuclar')">Sonuçlar</button>
+      <button class="tab" data-t="sorular"   onclick="tab('sorular')">Soru analizi</button>
+      <button class="tab" data-t="beceri"    onclick="tab('beceri')">Beceri haritası</button>
+      <button class="tab" data-t="degisim"   onclick="tab('degisim')">Cevap değiştirme</button>
+      <button class="tab" data-t="yerel"     onclick="tab('yerel')">Yerel veri</button>
+      <button class="tab" data-t="kvkk"      onclick="tab('kvkk')">KVKK</button>
+    </div>
+  </div></div>
+
+  <div class="wrap">
+    <!-- DENEMELER -->
+    <div id="t-denemeler">
+      <div class="panel">
+        <h2 class="serif">Deneme yayını</h2>
+        <div class="hint">Bir denemeyi açtığında öğrenciler ana sayfalarında onu görür ve çözebilir. Kapattığında deneme listeden kaybolur; devam eden oturumlar etkilenmez. <b>Tek hak</b> açıkken her öğrenci o denemeyi yalnızca bir kez çözebilir; bir öğrenciye yeniden hak vermek için sonuç kartındaki “Hakkı sıfırla” düğmesini kullan.</div>
+        <div class="tbl-scroll"><table>
+          <thead><tr>
+            <th>No</th><th>Başlık</th><th class="num">Süre</th>
+            <th>Öğrenciye not</th><th class="num">Çözen</th><th class="num">Ort. net</th>
+            <th>Tek hak</th><th>Yayın</th>
+          </tr></thead>
+          <tbody id="examRows"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h2 class="serif">Toplu işlem</h2>
+        <div class="hint">Sınav haftası için pratik kısayollar.</div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-line" onclick="bulk(true)">Tümünü aç</button>
+          <button class="btn btn-sm btn-line" onclick="bulk(false)">Tümünü kapat</button>
+          <button class="btn btn-sm btn-line" onclick="loadExams()">Yenile</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SONUÇLAR -->
+    <div id="t-sonuclar" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Öğrenci sonuçları</h2>
+        <div class="hint">Satıra dokunarak öğrencinin ayrıntılı raporunu aç.</div>
+        <div class="filters">
+          <select id="fDeneme" onchange="loadResults()"><option value="">Tüm denemeler</option></select>
+          <input id="fAd" type="search" placeholder="Öğrenci ara" oninput="renderResults()">
+          <select id="fSort" onchange="renderResults()">
+            <option value="net">Net (yüksekten)</option>
+            <option value="netAsc">Net (düşükten)</option>
+            <option value="tarih">En yeni</option>
+            <option value="ad">Ada göre</option>
+          </select>
+        </div>
+        <div class="kpis" id="resKpi"></div>
+        <div class="tbl-scroll"><table>
+          <thead><tr>
+            <th>Öğrenci</th><th class="num">Dn</th><th class="num">D</th><th class="num">Y</th>
+            <th class="num">B</th><th class="num">Net</th><th class="num">Süre</th>
+            <th class="num">Değişim</th><th>Tarih</th>
+          </tr></thead>
+          <tbody id="resRows"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SORU ANALİZİ -->
+    <div id="t-sorular" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Soru bazlı analiz</h2>
+        <div class="hint">Sınıfın en çok yanıldığı sorular üstte. "Bozdu" sütunu, doğru işaretleyip sonra yanlışa çeviren öğrenci sayısıdır — yüksek değer o sorunun çeldiricisinin fazla güçlü olduğunu ya da konunun tam oturmadığını gösterir.</div>
+        <div class="filters">
+          <select id="qDeneme" onchange="loadQuestions()"></select>
+          <select id="qSort" onchange="renderQuestions()">
+            <option value="zor">En zor sorular</option>
+            <option value="no">Soru sırası</option>
+            <option value="bozdu">En çok bozulan</option>
+            <option value="sure">En uzun süren</option>
+          </select>
+        </div>
+        <div class="tbl-scroll"><table>
+          <thead><tr>
+            <th class="num">Soru</th><th>Bölüm</th><th>Beceri</th>
+            <th class="num">Başarı</th><th></th>
+            <th class="num">Boş</th><th class="num">Bozdu</th><th class="num">Düzeltti</th><th class="num">Ort. sn</th>
+          </tr></thead>
+          <tbody id="qRows"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- BECERİ -->
+    <div id="t-beceri" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Sınıf beceri haritası</h2>
+        <div class="hint">Ders planını buna göre kur: en alttaki üç küme, sınıfça işlenmesi gereken konulardır.</div>
+        <div class="filters"><select id="kDeneme" onchange="loadKume()"><option value="">Tüm denemeler</option></select></div>
+        <div id="kumeList"></div>
+      </div>
+    </div>
+
+    <!-- DEĞİŞİM -->
+    <div id="t-degisim" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Cevap değiştirme davranışı</h2>
+        <div class="hint">Öğrencinin sınav içinde cevabını değiştirdiğinde kazandığı ve kaybettiği net. <b>Net kazanç eksi ise</b> o öğrenciye "ilk sezgine güven, yalnızca somut bir gerekçe bulduğunda değiştir" demek gerekir; artı ise kontrol alışkanlığı işe yarıyordur.</div>
+        <div class="tbl-scroll"><table>
+          <thead><tr>
+            <th>Öğrenci</th><th class="num">Deneme</th><th class="num">Y→D</th>
+            <th class="num">D→Y</th><th class="num">Y→Y</th><th class="num">Net kazanç</th><th>Yorum</th>
+          </tr></thead>
+          <tbody id="dRows"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- YEREL VERİ -->
+    <div id="t-yerel" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Veri kaynağı</h2>
+        <div class="hint">Yerel modda hiçbir veri internete çıkmaz. Öğrenciler sınav bitince
+          sonuç dosyasını indirir; sen bu dosyaları aşağıdan panele aktarırsın. Tüm analizler
+          aynen çalışır, veriler yalnızca bu bilgisayarda durur.</div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-sm" id="modBulut" onclick="modSec('bulut')">Bulut modu</button>
+          <button class="btn btn-sm" id="modYerel" onclick="modSec('yerel')">Yerel mod</button>
+          <span id="modDurum" class="note" style="text-align:left"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="serif">Sonuç dosyalarını aktar</h2>
+        <div class="hint">Öğrencilerin indirdiği <code>.json</code> dosyalarını birlikte seçebilirsin.
+          Aynı dosya iki kez aktarılırsa yinelenmez.</div>
+        <div id="dropZone" style="border:2px dashed var(--line);border-radius:14px;padding:26px;
+          text-align:center;background:var(--parchment);cursor:pointer"
+          onclick="document.getElementById('yerelDosya').click()">
+          <div style="font-size:15px;font-weight:650;margin-bottom:6px">Dosyaları buraya sürükle</div>
+          <div class="note" style="text-align:center;margin:0">veya tıklayıp seç</div>
+        </div>
+        <input type="file" id="yerelDosya" accept=".json" multiple style="display:none"
+          onchange="yerelAktar(this.files)">
+        <div id="aktarSonuc"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="serif">Yerel depo</h2>
+        <div class="kpis" id="yerelKpi"></div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn btn-sm btn-line" onclick="arsivle()">Arşivle ve indir</button>
+          <button class="btn btn-sm btn-line" onclick="eskiTemizle()">13 aydan eskileri sil</button>
+          <button class="btn btn-sm btn-line" style="border-color:var(--bad);color:var(--bad)"
+            onclick="yerelSil()">Yerel depoyu tamamen sil</button>
+        </div>
+        <div class="note" style="text-align:left;margin-top:12px">
+          <b>Arşivle ve indir</b>, tüm kayıtları hem veri dosyası hem de yazdırılabilir rapor
+          olarak dışa aktarır. Kurumun 12-13 aylık saklama ihtiyacı bu arşiv dosyalarıyla
+          karşılanır; uygulamada yalnızca güncel dönem tutulur.
+        </div>
+      </div>
+    </div>
+
+    <!-- KVKK -->
+    <div id="t-kvkk" style="display:none">
+      <div class="panel">
+        <h2 class="serif">Kurum şifreleme anahtarı</h2>
+        <div class="hint">Öğrenci adları sunucuda şifreli durur. Adları görebilmek için kurumun
+          özel anahtar dosyasını bu cihazda yüklemen gerekir. Anahtar sunucuya <b>gönderilmez</b>;
+          yalnızca bu oturum boyunca tarayıcının belleğinde tutulur ve sekmeyi kapattığında silinir.</div>
+        <div id="anahtarDurum"></div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:12px">
+          <input type="file" id="anahtarDosya" accept=".json" style="display:none"
+            onchange="anahtarYukle(this.files[0])">
+          <button class="btn btn-sm btn-fill" onclick="document.getElementById('anahtarDosya').click()">
+            Özel anahtar dosyası yükle</button>
+          <button class="btn btn-sm btn-fill" onclick="anahtarYapistir()">Anahtarı yapıştır (MIIEvw…)</button>
+          <button class="btn btn-sm btn-line" onclick="anahtarYapistir(true)">Eski anahtarı da ekle</button>
+          <button class="btn btn-sm btn-line" onclick="parolaGir()">Parola modu</button>
+          <button class="btn btn-sm btn-line" onclick="anahtarUnut()">Bu oturumdan kaldır</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="serif">İlgili kişi talepleri (KVKK m.11)</h2>
+        <div class="hint">Öğrenci veya velisi verilerinin bir kopyasını ya da silinmesini talep
+          ederse burayı kullan. Talep tarihini ve yapılan işlemi kurum kayıt defterine de işle;
+          yanıt süresi en çok 30 gündür.</div>
+        <div class="filters">
+          <input id="talepAd" type="text" placeholder="Öğrenci adı">
+          <input id="talepSoyad" type="text" placeholder="Soyadı">
+          <button class="btn btn-sm btn-line" onclick="talepBul()">Kayıtları bul</button>
+        </div>
+        <div id="talepSonuc"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="serif">Saklama süresi ve imha</h2>
+        <div class="hint">Kayıtlar varsayılan olarak oluşturulduktan 13 ay sonra otomatik silinir.
+          Otomatik görev tanımlı değilse buradan elle çalıştırabilirsin.</div>
+        <div class="kpis" id="imhaKpi"></div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn btn-sm btn-line" onclick="imhaCalistir()">Süresi geçenleri şimdi sil</button>
+          <button class="btn btn-sm btn-line" onclick="imhaDefteri()">İmha defterini göster</button>
+        </div>
+        <div id="imhaListe"></div>
+      </div>
+
+      <div class="panel">
+        <h2 class="serif">Uyum kontrol listesi</h2>
+        <div class="note" id="uyumListe"></div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="brand serif">Royal British Academy · KeyKampüs Kurs Merkezi</div>
+      <div class="by">by <b>Ajlan Abudak</b> · İngilizce Öğretmeni · Eğitim Teknolojisi Uzmanı</div>
+    </footer>
+  </div>
+</section>
+
+<!-- ÖĞRENCİ RAPORU -->
+<div class="modal" id="modal">
+  <div class="modal-bg" onclick="closeModal()"></div>
+  <div class="modal-in" id="modalIn"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ AYARLAR ═══ */
+const SUPABASE_URL = "https://hgjlxoljsvleylrulozn.supabase.co";
+const SUPABASE_ANON_KEY = ""; // ← anon key
+let sb = null;
+
+const SECNAME = {kelime:"Kelime",gramer:"Dil bilgisi",cloze:"Cloze","cumle-tamamlama":"Cümle tamamlama",
+  okuma:"Okuma",diyalog:"Diyalog","anlamca-yakin":"Anlamca yakın",durum:"Durum",
+  "paragraf-tamamlama":"Paragraf tamamlama","ing-tr":"İng→Tr","tr-ing":"Tr→İng","akis-bozan":"Akışı bozan"};
+
+let EXAMS=[], RESULTS=[], QSTATS=[];
+
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function toast(m,ms=2500){const t=$('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms)}
+function fmtSure(sn){if(sn==null)return '—';const m=Math.floor(sn/60);return m+' dk'}
+function fmtTarih(s){if(!s)return '—';const d=new Date(s);
+  return d.toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'})+' '+
+         d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}
+function barHtml(p){const c=p>=70?'':(p>=45?'mid':'low');
+  return `<div class="bar"><i class="${c}" style="width:${p}%"></i></div>`}
+
+/* ═══ OTURUM ═══ */
+function initSb(){
+  if(!SUPABASE_ANON_KEY){
+    $('loginErr').textContent="Supabase anon key tanımlı değil. Dosyadaki SUPABASE_ANON_KEY alanını doldur.";
+    return false;
+  }
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return true;
+}
+async function signIn(){
+  if(!sb && !initSb()) return;
+  $('loginErr').textContent="";
+  const {data,error} = await sb.auth.signInWithPassword({
+    email:$('email').value.trim(), password:$('pass').value});
+  if(error){ $('loginErr').textContent="Giriş başarısız: "+error.message; return; }
+  enter(data.user);
+}
+async function signOut(){ await sb.auth.signOut(); location.reload(); }
+async function enter(user){
+  $('login').classList.remove('on'); $('app').classList.add('on');
+  $('whoBox').textContent = user.email;
+  yerelCiz();
+  await loadExams(); await loadResults(); await loadKume(); await loadDegisim();
+}
+(async function boot(){
+  if(!initSb()) return;
+  const {data} = await sb.auth.getSession();
+  if(data.session) enter(data.session.user);
+})();
+
+function tab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===name));
+  ['denemeler','sonuclar','sorular','beceri','degisim','yerel','kvkk'].forEach(t=>
+    $('t-'+t).style.display = t===name?'block':'none');
+  if(name==='sorular' && !QSTATS.length) loadQuestions();
+  if(name==='kvkk'){ anahtarDurumCiz(); uyumCiz(); imhaOzet(); }
+  if(name==='yerel'){ yerelCiz(); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   YEREL MOD — veri kurum bilgisayarından hiç çıkmaz
+   ═══════════════════════════════════════════════════════ */
+const YLS = 'ydt.panel.yerel.v1';
+let MOD = localStorage.getItem('ydt.panel.mod') || 'bulut';
+
+function yerelYukle(){ try{ return JSON.parse(localStorage.getItem(YLS)||'[]') }catch(e){ return [] } }
+function yerelYaz(a){ try{ localStorage.setItem(YLS, JSON.stringify(a)) }catch(e){ toast('Depo dolu: eski kayıtları arşivleyip sil.') } }
+function yerelMi(){ return MOD==='yerel' }
+
+function modSec(m){
+  MOD=m; localStorage.setItem('ydt.panel.mod',m);
+  yerelCiz();
+  loadResults(); loadKume(); loadDegisim(); QSTATS=[];
+  toast(m==='yerel' ? 'Yerel moda geçildi. Veriler yalnızca bu bilgisayarda.' : 'Bulut moduna geçildi.');
+}
+function dropKur(){
+  const z=$('dropZone'); if(!z||z._kuruldu) return; z._kuruldu=true;
+  ['dragenter','dragover'].forEach(e=>z.addEventListener(e,ev=>{
+    ev.preventDefault(); z.style.borderColor='var(--lion)'; z.style.background='#F0EAF7';
+  }));
+  ['dragleave','drop'].forEach(e=>z.addEventListener(e,ev=>{
+    ev.preventDefault(); z.style.borderColor='var(--line)'; z.style.background='var(--parchment)';
+  }));
+  z.addEventListener('drop',ev=>{ if(ev.dataTransfer&&ev.dataTransfer.files) yerelAktar(ev.dataTransfer.files); });
+}
+function yerelCiz(){
+  dropKur();
+  const b=$('modBulut'), y=$('modYerel');
+  if(b&&y){
+    b.className='btn btn-sm '+(yerelMi()?'btn-line':'btn-fill');
+    y.className='btn btn-sm '+(yerelMi()?'btn-fill':'btn-line');
+  }
+  const d=$('modDurum');
+  if(d) d.innerHTML = yerelMi()
+    ? 'Aktif: <b>yerel</b> — internete hiçbir veri gitmiyor.'
+    : 'Aktif: <b>bulut</b> — sonuçlar Supabase üzerinden geliyor.';
+  const kayit=yerelYukle();
+  const k=$('yerelKpi');
+  if(k){
+    const ogr=new Set(kayit.map(r=>r._kimlik)).size;
+    const eski=kayit.filter(r=>yas(r)>13).length;
+    k.innerHTML=`<div class="kpi lion"><b>${kayit.length}</b><span>Kayıtlı oturum</span></div>
+      <div class="kpi"><b>${ogr}</b><span>Öğrenci</span></div>
+      <div class="kpi"><b>${eski}</b><span>13 aydan eski</span></div>
+      <div class="kpi"><b>${(JSON.stringify(kayit).length/1024).toFixed(0)} KB</b><span>Depo boyutu</span></div>`;
+  }
+}
+function yas(r){
+  const t=new Date(r.finished_at||r.created_at||Date.now());
+  return (Date.now()-t.getTime())/(30.44*864e5);
+}
+
+/* Öğrenci rapor dosyasını panel kaydına çevirir */
+function raporuCevir(j){
+  if(!j || !j.ogrenci || !j.deneme_no) return null;
+  const ad=(j.ogrenci.ad||'').trim(), soyad=(j.ogrenci.soyad||'').trim();
+  const g=j.degisiklik||{};
+  return {
+    id: 'y_'+(j.finished_at||'')+'_'+j.deneme_no+'_'+(ad+soyad).toLocaleLowerCase('tr'),
+    _kimlik: (ad+' '+soyad).toLocaleLowerCase('tr').replace(/\s+/g,' ').trim(),
+    _ad: ad, _soyad: soyad,
+    deneme_no:j.deneme_no, dogru:j.dogru, yanlis:j.yanlis, bos:j.bos, net:j.net,
+    sure_kullanilan_sn:j.sure_kullanilan_sn, zaman_doldu:!!j.zaman_doldu,
+    degisiklik_toplam:g.toplam||0, degisen_soru_sayisi:g.soru||0,
+    dyd_dogru_yanlis:g.dogru_yanlis||0, dyd_yanlis_dogru:g.yanlis_dogru||0,
+    dyd_yanlis_yanlis:g.yanlis_yanlis||0,
+    bolum_analizi:j.bolum_analizi, kume_analizi:j.kume_analizi,
+    started_at:j.started_at, finished_at:j.finished_at, created_at:j.finished_at,
+    _cevaplar:(j.answers||[])
+  };
+}
+async function yerelAktar(files){
+  if(!files||!files.length) return;
+  const mevcut=yerelYukle(), idler=new Set(mevcut.map(r=>r.id));
+  let eklendi=0, yinelenen=0, hatali=0;
+  for(const f of files){
+    try{
+      const j=JSON.parse(await f.text());
+      const liste=Array.isArray(j)?j:[j];        // kuyruk dosyası dizi olabilir
+      for(const item of liste){
+        const k=raporuCevir(item);
+        if(!k){hatali++;continue}
+        if(idler.has(k.id)){yinelenen++;continue}
+        idler.add(k.id); mevcut.push(k); eklendi++;
+      }
+    }catch(e){ hatali++; }
+  }
+  yerelYaz(mevcut);
+  $('aktarSonuc').innerHTML=`<div class="note" style="text-align:left;margin-top:12px">
+    <b>${eklendi}</b> yeni kayıt aktarıldı${yinelenen?`, ${yinelenen} kayıt zaten vardı`:''}${hatali?`, <b style="color:var(--bad)">${hatali} dosya okunamadı</b>`:''}.</div>`;
+  if(eklendi && !yerelMi()) modSec('yerel'); else { yerelCiz(); loadResults(); loadKume(); loadDegisim(); }
+}
+function arsivle(){
+  const kayit=yerelYukle();
+  if(!kayit.length){ toast('Arşivlenecek kayıt yok.'); return; }
+  const t=new Date().toISOString().slice(0,10);
+  // 1) veri arşivi
+  indirDosya('YDT_arsiv_'+t+'.json', JSON.stringify({
+    kurum:'Royal British Academy · KeyKampüs Kurs Merkezi',
+    arsiv_tarihi:new Date().toISOString(), kayit_sayisi:kayit.length, kayitlar:kayit
+  },null,2), 'application/json');
+  // 2) yazdırılabilir rapor
+  const sat=kayit.slice().sort((a,b)=>a._kimlik.localeCompare(b._kimlik,'tr')||a.deneme_no-b.deneme_no);
+  const html='<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>YDT Arşiv '+t+'</title>'+
+    '<style>body{font-family:Georgia,serif;padding:26px;color:#16202E}h1{font-size:20px}'+
+    'table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}'+
+    'th,td{border-bottom:1px solid #ddd;padding:6px 7px;text-align:left}'+
+    'th{background:#2A0E4F;color:#fff;font-size:10px;text-transform:uppercase}'+
+    'td.n{text-align:right}@media print{body{padding:0}}</style></head><body>'+
+    '<h1>YDT Deneme Sınavları — Sonuç Arşivi</h1>'+
+    '<div>Royal British Academy · KeyKampüs Kurs Merkezi<br>Arşiv tarihi: '+t+
+    ' · Kayıt sayısı: '+kayit.length+'</div><table><thead><tr>'+
+    '<th>Öğrenci</th><th>Dn</th><th>D</th><th>Y</th><th>B</th><th>Net</th><th>Süre</th><th>Tarih</th>'+
+    '</tr></thead><tbody>'+sat.map(r=>'<tr><td>'+esc(r._ad+' '+r._soyad)+'</td><td class="n">'+r.deneme_no+
+    '</td><td class="n">'+r.dogru+'</td><td class="n">'+r.yanlis+'</td><td class="n">'+r.bos+
+    '</td><td class="n">'+Number(r.net).toFixed(2).replace('.',',')+'</td><td class="n">'+
+    Math.round((r.sure_kullanilan_sn||0)/60)+' dk</td><td>'+fmtTarih(r.finished_at)+'</td></tr>').join('')+
+    '</tbody></table><p style="margin-top:20px;font-size:11px;color:#5E6B7C">Bu arşiv KVKK saklama '+
+    'yükümlülüğü kapsamında oluşturulmuştur. Kurum güvenli belge alanında saklanmalı, süresi '+
+    'dolduğunda imha edilmelidir.</p></body></html>';
+  indirDosya('YDT_arsiv_'+t+'.html', html, 'text/html');
+  toast('İki dosya indirildi: veri arşivi ve yazdırılabilir rapor.');
+}
+function indirDosya(ad, icerik, tip){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([icerik],{type:tip}));
+  a.download=ad; a.click(); URL.revokeObjectURL(a.href);
+}
+function eskiTemizle(){
+  const kayit=yerelYukle();
+  const kalan=kayit.filter(r=>yas(r)<=13);
+  const silinen=kayit.length-kalan.length;
+  if(!silinen){ toast('13 aydan eski kayıt yok.'); return; }
+  if(!confirm(silinen+' kayıt kalıcı olarak silinecek.\n\nÖnce "Arşivle ve indir" ile yedek aldığından emin ol.\n\nOnaylıyor musun?')) return;
+  yerelYaz(kalan); yerelCiz(); loadResults();
+  toast(silinen+' eski kayıt silindi.');
+}
+function yerelSil(){
+  if(!confirm('Yerel depodaki TÜM kayıtlar silinecek. Bu işlem geri alınamaz.\n\nOnaylıyor musun?')) return;
+  localStorage.removeItem(YLS); yerelCiz(); loadResults(); loadKume(); loadDegisim();
+  toast('Yerel depo silindi.');
+}
+
+/* ═══ KVKK: ANAHTAR, AD ÇÖZME, HAK TALEPLERİ ═══ */
+let ANAHTARLAR = [];          // [{ad, key}] — yeni anahtar başta, eski anahtarlar sonra
+let OZEL_ANAHTAR = null;      // geriye uyumluluk: ANAHTARLAR[0]
+let ANAHTAR_TUZ  = null;
+const AD_ONBELLEK = new Map();  // ogrenci_no -> "Ad Soyad" (yalnızca bellek)
+
+let PAROLA_ANAHTAR = null;    // parola modu için
+
+async function anahtarYapistir(eskiMi){
+  const m = prompt(eskiMi
+    ? 'ESKİ özel anahtarı yapıştır (eski kayıtları okuyabilmek için):'
+    : 'Özel anahtarı yapıştır (MIIEvw... ile başlayan metnin tamamı):');
+  if(!m) return;
+  const tur = YDT_KVKK.anahtarTuru(m);
+  if(tur === 'spki' || tur === 'jwk-acik'){
+    toast('Bu bir AÇIK anahtar. Adları çözmek için ÖZEL anahtar gerekir.', 5000); return;
+  }
+  const t = prompt('Takma kimlik tuzu (üç uygulamada aynı olmalı):', ANAHTAR_TUZ||'');
+  for(const hash of ['SHA-256','SHA-1']){
+    try{
+      const k = tur==='pkcs8'
+        ? await YDT_KVKK.ozelAnahtarPem(m, hash)
+        : await YDT_KVKK.ozelAnahtarYukle(JSON.parse(m));
+      const kayit = {ad:(eskiMi?'eski':'güncel')+' ('+hash+')', key:k};
+      if(eskiMi) ANAHTARLAR.push(kayit); else ANAHTARLAR.unshift(kayit);
+      OZEL_ANAHTAR = ANAHTARLAR[0].key;
+      ANAHTAR_TUZ = t || ANAHTAR_TUZ;
+      AD_ONBELLEK.clear(); anahtarDurumCiz();
+      if(RESULTS.length){ await adlariCoz(RESULTS); renderResults(); }
+      toast('Anahtar alındı ('+hash+'). Toplam '+ANAHTARLAR.length+' anahtar yüklü.');
+      return;
+    }catch(e){}
+  }
+  toast('Anahtar okunamadı. Metnin tamamını, boşluksuz yapıştırdığından emin ol.', 5000);
+  anahtarDurumCiz();
+}
+async function parolaGir(){
+  const p = prompt('Parola modu anahtarını yapıştır (yalnızca parola modu kullanıyorsan):');
+  if(!p) return;
+  const t = prompt('Takma kimlik tuzu:', ANAHTAR_TUZ||'');
+  PAROLA_ANAHTAR = p; ANAHTAR_TUZ = t || ANAHTAR_TUZ;
+  AD_ONBELLEK.clear(); anahtarDurumCiz();
+  if(RESULTS.length){ await adlariCoz(RESULTS); renderResults(); }
+  toast('Parola modu anahtarı bu oturuma alındı.');
+}
+
+async function anahtarYukle(file){
+  if(!file) return;
+  try{
+    const j = JSON.parse(await file.text());
+    const jwk = j.ozel_anahtar || j.privateKey || j;
+    const k = await YDT_KVKK.ozelAnahtarYukle(jwk);
+    ANAHTARLAR.unshift({ad:'dosya: '+(j.kurum||file.name), key:k});
+    OZEL_ANAHTAR = k;
+    ANAHTAR_TUZ = j.tuz || null;
+    AD_ONBELLEK.clear();
+    toast('Anahtar yüklendi. Adlar artık çözülebilir.');
+    anahtarDurumCiz();
+    if(RESULTS.length) renderResults();
+  }catch(e){
+    OZEL_ANAHTAR=null;
+    toast('Anahtar okunamadı: '+e.message, 4000);
+    anahtarDurumCiz();
+  }
+}
+function anahtarUnut(){
+  ANAHTARLAR=[]; OZEL_ANAHTAR=null; PAROLA_ANAHTAR=null; ANAHTAR_TUZ=null; AD_ONBELLEK.clear();
+  anahtarDurumCiz(); renderResults(); toast('Anahtar bu oturumdan kaldırıldı.');
+}
+function anahtarDurumCiz(){
+  const el=$('anahtarDurum'); if(!el) return;
+  el.innerHTML = (ANAHTARLAR.length||PAROLA_ANAHTAR)
+    ? `<div style="background:#EEF5EF;border:1px solid #CFE0D2;border-radius:11px;padding:13px;font-size:14px">
+        <b style="color:var(--good)">${ANAHTARLAR.length||1} anahtar yüklü.</b>
+        ${ANAHTARLAR.map(a=>esc(a.ad)).join(', ')}<br>
+        Bir kayıt hangi anahtarla şifrelenmişse onunla çözülür; anahtar değiştirdiysen
+        eski anahtarı da yükleyerek geçmiş kayıtları okumaya devam edebilirsin.
+        Sekmeyi kapattığında anahtarlar bellekten silinir.</div>`
+    : `<div style="background:#F3EEF9;border:1px solid #DDD0EE;border-radius:11px;padding:13px;font-size:14px">
+        <b style="color:var(--bad)">Anahtar yüklü değil.</b> Sonuç listesinde öğrenciler
+        takma kimlikleriyle görünür. Bu normaldir: adlar sunucuda şifreli saklanır.</div>`;
+}
+
+/* Bir kaydın adını çözer; anahtar yoksa takma kimliği kısaltarak döner. */
+async function adCoz(r){
+  const no = r.ogrenci_no || '';
+  if(!r.kimlik_sifreli) return '# ' + no.slice(0,8);
+  const mod = YDT_KVKK.paketModu(r.kimlik_sifreli);
+  if(mod === 'parola' ? !PAROLA_ANAHTAR : !ANAHTARLAR.length) return '# ' + no.slice(0,8);
+  if(AD_ONBELLEK.has(no)) return AD_ONBELLEK.get(no);
+  try{
+    let k = null;
+    if(mod === 'parola'){
+      k = await YDT_KVKK.kimlikCozParola(r.kimlik_sifreli, PAROLA_ANAHTAR, ANAHTAR_TUZ);
+    } else {
+      for(const a of ANAHTARLAR){
+        try{ k = await YDT_KVKK.kimlikCoz(r.kimlik_sifreli, a.key); break; }catch(e){}
+      }
+      if(!k) throw new Error('hiçbir anahtar çözemedi');
+    }
+    const ad = ((k.ad||'')+' '+(k.soyad||'')).trim() || ('# '+no.slice(0,8));
+    AD_ONBELLEK.set(no, ad);
+    return ad;
+  }catch(e){ return '# ' + no.slice(0,8) + ' (çözülemedi)'; }
+}
+/* Listedeki tüm adları toplu çözer, sonra tabloyu tazeler. */
+async function adlariCoz(rows){
+  if(!ANAHTARLAR.length && !PAROLA_ANAHTAR) return;
+  for(const r of rows){ if(r.ogrenci_no && !AD_ONBELLEK.has(r.ogrenci_no)) await adCoz(r); }
+}
+function adGoster(r){
+  if(r._ad) return (r._ad+' '+r._soyad).trim();
+  const no=r.ogrenci_no||'';
+  return AD_ONBELLEK.get(no) || ('# '+no.slice(0,8));
+}
+
+async function talepBul(){
+  const ad=$('talepAd').value.trim(), soyad=$('talepSoyad').value.trim();
+  const el=$('talepSonuc');
+  if(!ad||!soyad){ el.innerHTML='<div class="note">Ad ve soyadı gir.</div>'; return; }
+  if(!ANAHTAR_TUZ){ el.innerHTML='<div class="note">Önce özel anahtar dosyasını yükle (tuz o dosyada).</div>'; return; }
+  const no = await YDT_KVKK.takmaKimlik(ad, soyad, ANAHTAR_TUZ);
+  const {data,error} = await sb.rpc('ydt_ogrenci_disa_aktar',{p_no:no});
+  if(error){ el.innerHTML='<div class="note">Hata: '+esc(error.message)+'</div>'; return; }
+  const kayit = data||[];
+  el.innerHTML = `
+    <div class="note" style="margin-bottom:10px">
+      <b>${esc(ad)} ${esc(soyad)}</b> · takma kimlik <code>${esc(no)}</code> ·
+      <b>${kayit.length}</b> deneme kaydı bulundu.</div>
+    ${kayit.length?`<div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-line" onclick='talepAktar(${JSON.stringify(no)},${JSON.stringify(ad+" "+soyad)})'>
+        Kopyasını indir (erişim talebi)</button>
+      <button class="btn btn-sm btn-line" style="border-color:var(--bad);color:var(--bad)"
+        onclick='talepSil(${JSON.stringify(no)},${JSON.stringify(ad+" "+soyad)})'>
+        Tüm kayıtlarını sil (silme talebi)</button></div>`:''}`;
+  el._veri = kayit;
+}
+async function talepAktar(no, adSoyad){
+  const veri = $('talepSonuc')._veri || [];
+  const cikti = {ilgili_kisi:adSoyad, takma_kimlik:no,
+    talep_tarihi:new Date().toISOString(),
+    kurum:'Royal British Academy · KeyKampüs Kurs Merkezi',
+    aciklama:'KVKK m.11 kapsamında erişim talebi üzerine hazırlanmıştır.',
+    kayitlar:veri};
+  const blob=new Blob([JSON.stringify(cikti,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=('KVKK_erisim_'+adSoyad+'.json').replace(/\s+/g,'_'); a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Dosya indirildi. İlgili kişiye ulaştır ve kurum defterine işle.');
+}
+async function talepSil(no, adSoyad){
+  if(!confirm(adSoyad+' adlı öğrencinin TÜM deneme kayıtları kalıcı olarak silinecek.\n\n'+
+    'Bu işlem geri alınamaz. Silmeden önce erişim talebi kopyasını indirmiş olmalısın.\n\nOnaylıyor musun?')) return;
+  const {data,error} = await sb.rpc('ydt_ogrenci_sil',{p_no:no, p_aciklama:'ilgili kişi silme talebi'});
+  if(error){ toast('Hata: '+error.message); return; }
+  toast(data+' kayıt silindi ve imha defterine işlendi.');
+  $('talepSonuc').innerHTML=''; await loadResults(); imhaOzet();
+}
+
+async function imhaOzet(){
+  const el=$('imhaKpi'); if(!el) return;
+  const {data:yakin} = await sb.from('ydt_attempts')
+    .select('saklama_bitis', {count:'exact', head:false})
+    .lte('saklama_bitis', new Date(Date.now()+30*864e5).toISOString().slice(0,10));
+  const {data:gecmis} = await sb.from('ydt_attempts')
+    .select('id').lt('saklama_bitis', new Date().toISOString().slice(0,10));
+  el.innerHTML = `
+    <div class="kpi"><b>${(gecmis||[]).length}</b><span>Süresi dolmuş</span></div>
+    <div class="kpi"><b>${(yakin||[]).length}</b><span>30 gün içinde dolacak</span></div>`;
+}
+async function imhaCalistir(){
+  if(!confirm('Saklama süresi dolmuş kayıtlar kalıcı olarak silinecek. Onaylıyor musun?')) return;
+  const {data,error} = await sb.rpc('ydt_suresi_gecenleri_sil');
+  if(error){ toast('Hata: '+error.message); return; }
+  toast((data||0)+' kayıt silindi.'); imhaOzet(); loadResults();
+}
+async function imhaDefteri(){
+  const {data,error}=await sb.from('ydt_imha_kayit').select('*')
+    .order('tarih',{ascending:false}).limit(50);
+  const el=$('imhaListe');
+  if(error){ el.innerHTML='<div class="note">Hata: '+esc(error.message)+'</div>'; return; }
+  el.innerHTML = (data||[]).length ? `<div class="tbl-scroll" style="margin-top:12px"><table>
+    <thead><tr><th>Tarih</th><th>Tip</th><th class="num">Adet</th><th>Açıklama</th></tr></thead>
+    <tbody>${data.map(r=>`<tr><td>${fmtTarih(r.tarih)}</td><td>${esc(r.calisma_tipi)}</td>
+      <td class="num">${r.silinen_adet}</td><td style="font-size:12.5px">${esc(r.aciklama||'')}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="note" style="margin-top:12px">Defter boş.</div>';
+}
+function uyumCiz(){
+  const el=$('uyumListe'); if(!el) return;
+  const sat=(ok,metin)=>`<div style="margin-bottom:9px">${ok?'✓':'•'} ${metin}</div>`;
+  el.innerHTML =
+    sat(true,'<b>Ad-soyad şifreli saklanıyor.</b> Sunucuda düz ad hiçbir zaman bulunmaz.') +
+    sat(true,'<b>Özel anahtar buluta yüklenmiyor.</b> Yalnızca bu tarayıcı oturumunda tutulur.') +
+    sat(true,'<b>Aydınlatma metni</b> her öğrenciye sınav öncesi gösteriliyor; sürümü ve zamanı kayıtlı.') +
+    sat(true,'<b>Saklama süresi</b> her kayda otomatik işleniyor (13 ay) ve imha defteri tutuluyor.') +
+    sat(true,'<b>Özel nitelikli veri toplanmıyor</b> (sağlık, din, biyometri vb.).') +
+    sat(false,'<b>Yurt dışına aktarım:</b> Supabase projenin bölgesini kontrol et. Türkiye dışındaysa '+
+      'KVKK m.9 yükümlülüğü doğar. Alternatif: self-hosted Supabase veya uygulamanın yerel modu.') +
+    sat(false,'<b>VERBİS:</b> Çalışan sayısı ve bilanço eşiklerini yıllık kontrol et.') +
+    sat(false,'<b>Veli onayı:</b> 18 yaş altı öğrenciler için kurs kaydındaki veli bilgilendirme '+
+      'formunun bu uygulamayı da kapsadığından emin ol.') +
+    sat(false,'<b>Hukuki onay:</b> Aydınlatma metninin ve saklama politikasının nihai hâli bir '+
+      'hukukçu tarafından onaylanmalıdır. Bu panel hukuki görüş sunmaz.');
+}
+
+/* ═══ DENEMELER ═══ */
+async function loadExams(){
+  const {data,error} = await sb.from('ydt_exams').select('*').order('deneme_no');
+  if(error){toast('Denemeler alınamadı: '+error.message);return}
+  EXAMS = data;
+  // her deneme için çözen/ort net
+  const {data:agg} = await sb.from('ydt_attempts').select('deneme_no,net');
+  const m={};
+  (agg||[]).forEach(r=>{m[r.deneme_no]=m[r.deneme_no]||[];m[r.deneme_no].push(Number(r.net))});
+  $('examRows').innerHTML = EXAMS.map(e=>{
+    const nets=m[e.deneme_no]||[];
+    const ort=nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(2).replace('.',','):'—';
+    return `<tr>
+      <td><b>${e.deneme_no}</b></td>
+      <td>${esc(e.baslik)}</td>
+      <td class="num">${e.sure_dk} dk</td>
+      <td><input style="width:100%;min-width:130px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--parchment);font-size:13px"
+            value="${esc(e.not_||'')}" placeholder="opsiyonel"
+            onchange="saveNot(${e.deneme_no},this.value)"></td>
+      <td class="num">${nets.length}</td>
+      <td class="num">${ort}</td>
+      <td><label class="sw"><input type="checkbox" ${e.tek_hak!==false?'checked':''}
+            onchange="toggleHak(${e.deneme_no},this.checked)"><span></span></label></td>
+      <td><label class="sw"><input type="checkbox" ${e.aktif?'checked':''}
+            onchange="toggle(${e.deneme_no},this.checked)"><span></span></label></td>
+    </tr>`;
+  }).join('');
+  // filtre seçenekleri
+  const opts = EXAMS.map(e=>`<option value="${e.deneme_no}">Deneme ${e.deneme_no}</option>`).join('');
+  $('fDeneme').innerHTML = '<option value="">Tüm denemeler</option>'+opts;
+  $('kDeneme').innerHTML = '<option value="">Tüm denemeler</option>'+opts;
+  $('qDeneme').innerHTML = opts;
+}
+async function toggle(no,val){
+  const {error} = await sb.from('ydt_exams')
+    .update({aktif:val, guncellendi:new Date().toISOString()}).eq('deneme_no',no);
+  toast(error ? 'Hata: '+error.message : `Deneme ${no} ${val?'öğrencilere açıldı':'kapatıldı'}.`);
+}
+async function toggleHak(no,val){
+  const {error} = await sb.from('ydt_exams').update({tek_hak:val}).eq('deneme_no',no);
+  toast(error ? 'Hata: '+error.message
+    : `Deneme ${no}: ${val?'her öğrenci bir kez çözebilir':'sınırsız tekrar açık'}.`);
+}
+async function hakSifirla(kod,deneme,ad){
+  if(!confirm(`${ad} için Deneme ${deneme} hakkı sıfırlansın mı?\n\nMevcut sonucu ve tüm soru kayıtları SİLİNİR, öğrenci denemeyi baştan çözebilir. Bu işlem geri alınamaz.`))return;
+  const {data,error}=await sb.rpc('ydt_hak_sifirla',{p_no:kod,p_deneme:deneme});
+  if(error){toast('Hata: '+error.message);return}
+  toast(`Hak sıfırlandı (${data} kayıt silindi).`);
+  closeModal(); await loadResults();
+}
+async function saveNot(no,val){
+  const {error} = await sb.from('ydt_exams').update({not_:val||null}).eq('deneme_no',no);
+  toast(error?'Hata: '+error.message:'Not kaydedildi.');
+}
+async function bulk(val){
+  if(!confirm(val?'Tüm denemeler öğrencilere açılsın mı?':'Tüm denemeler kapatılsın mı?'))return;
+  const {error} = await sb.from('ydt_exams').update({aktif:val}).gte('deneme_no',1);
+  if(error){toast('Hata: '+error.message);return}
+  await loadExams(); toast(val?'Tümü açıldı.':'Tümü kapatıldı.');
+}
+
+/* ═══ SONUÇLAR ═══ */
+async function loadResults(){
+  if(yerelMi()){
+    const f=$('fDeneme')?$('fDeneme').value:'';
+    RESULTS = yerelYukle().filter(r=>!f||String(r.deneme_no)===String(f))
+      .sort((a,b)=>new Date(b.finished_at)-new Date(a.finished_at));
+    RESULTS.forEach(r=>AD_ONBELLEK.set(r.ogrenci_no||r._kimlik, r._ad+' '+r._soyad));
+    renderResults(); return;
+  }
+  let q = sb.from('ydt_attempts').select('*').order('created_at',{ascending:false}).limit(2000);
+  const f=$('fDeneme').value; if(f) q=q.eq('deneme_no',f);
+  const {data,error}=await q;
+  if(error){toast('Sonuçlar alınamadı: '+error.message);return}
+  RESULTS=data;
+  await adlariCoz(RESULTS);
+  renderResults();
+}
+function renderResults(){
+  const term=($('fAd').value||'').toLocaleLowerCase('tr');
+  let rows=RESULTS.filter(r=>!term ||
+    adGoster(r).toLocaleLowerCase('tr').includes(term));
+  const s=$('fSort').value;
+  rows=[...rows].sort((a,b)=>
+    s==='net'?b.net-a.net : s==='netAsc'?a.net-b.net :
+    s==='ad'?adGoster(a).localeCompare(adGoster(b),'tr') :
+    new Date(b.created_at)-new Date(a.created_at));
+  const nets=rows.map(r=>Number(r.net));
+  const ort=nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length):0;
+  const enY=nets.length?Math.max(...nets):0, enD=nets.length?Math.min(...nets):0;
+  const zd=rows.filter(r=>r.zaman_doldu).length;
+  $('resKpi').innerHTML = `
+    <div class="kpi lion"><b>${rows.length}</b><span>Oturum</span></div>
+    <div class="kpi"><b>${ort.toFixed(2).replace('.',',')}</b><span>Ortalama net</span></div>
+    <div class="kpi good"><b>${enY.toFixed(2).replace('.',',')}</b><span>En yüksek</span></div>
+    <div class="kpi bad"><b>${enD.toFixed(2).replace('.',',')}</b><span>En düşük</span></div>
+    <div class="kpi"><b>${zd}</b><span>Süresi doldu</span></div>`;
+  $('resRows').innerHTML = rows.length ? rows.map(r=>`
+    <tr class="click" onclick='openReport(${JSON.stringify(r.id)})'>
+      <td>${esc(adGoster(r))}</td>
+      <td class="num">${r.deneme_no}</td>
+      <td class="num" style="color:var(--good)">${r.dogru}</td>
+      <td class="num" style="color:var(--bad)">${r.yanlis}</td>
+      <td class="num" style="color:var(--muted)">${r.bos}</td>
+      <td class="num"><b>${Number(r.net).toFixed(2).replace('.',',')}</b></td>
+      <td class="num">${fmtSure(r.sure_kullanilan_sn)}${r.zaman_doldu?' ⏱':''}</td>
+      <td class="num">${r.degisiklik_toplam||0}</td>
+      <td>${fmtTarih(r.finished_at||r.created_at)}</td>
+    </tr>`).join('') : `<tr><td colspan="9" class="empty">Kayıt yok.</td></tr>`;
+}
+
+/* ═══ ÖĞRENCİ RAPORU ═══ */
+async function openReport(id){
+  const r = RESULTS.find(x=>x.id===id); if(!r) return;
+  let ans;
+  if(yerelMi()){ ans=(r._cevaplar||[]).slice().sort((a,b)=>a.soru_no-b.soru_no); }
+  else { const q=await sb.from('ydt_answers').select('*').eq('attempt_id',id).order('soru_no'); ans=q.data; }
+  const R = window.YDT_REHBER;
+  const kume = r.kume_analizi||{};
+  const zayif = Object.entries(kume).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),v}))
+    .filter(x=>x.v.t>=2).sort((a,b)=>a.p-b.p).slice(0,5);
+  const yanlisSorular = (ans||[]).filter(a=>a.sonuc!=='dogru');
+  $('modalIn').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px">
+      <div>
+        <h2 class="serif" style="font-size:19px">${esc(adGoster(r))}</h2>
+        <div class="note">Deneme ${r.deneme_no} · ${fmtTarih(r.finished_at||r.created_at)}</div>
+      </div>
+      <button class="btn btn-sm btn-line" onclick="closeModal()">Kapat</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi lion"><b>${Number(r.net).toFixed(2).replace('.',',')}</b><span>Net</span></div>
+      <div class="kpi good"><b>${r.dogru}</b><span>Doğru</span></div>
+      <div class="kpi bad"><b>${r.yanlis}</b><span>Yanlış</span></div>
+      <div class="kpi"><b>${r.bos}</b><span>Boş</span></div>
+      <div class="kpi"><b>${fmtSure(r.sure_kullanilan_sn)}</b><span>Süre</span></div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h2 class="serif" style="font-size:15px">Cevap değiştirme</h2>
+      <div class="note" style="margin-top:8px">
+        Toplam ${r.degisiklik_toplam||0} değişiklik, ${r.degisen_soru_sayisi||0} soruda.
+        Yanlıştan doğruya <b style="color:var(--good)">${r.dyd_yanlis_dogru||0}</b>,
+        doğrudan yanlışa <b style="color:var(--bad)">${r.dyd_dogru_yanlis||0}</b>,
+        yanlıştan yanlışa ${r.dyd_yanlis_yanlis||0}.
+        <b>Net etki: ${((r.dyd_yanlis_dogru||0)-(r.dyd_dogru_yanlis||0))>=0?'+':''}${(r.dyd_yanlis_dogru||0)-(r.dyd_dogru_yanlis||0)} soru.</b>
+        ${((r.dyd_yanlis_dogru||0)-(r.dyd_dogru_yanlis||0))<0
+          ? '<br>Bu öğrenciye: değiştirmeden önce somut bir gerekçe bulmalı, tereddütle değiştirmemeli.'
+          : ''}
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="serif" style="font-size:15px">Öncelikli çalışma alanları</h2>
+      ${zayif.map(x=>{
+        const info=R.kumeBilgi(x.k);
+        return `<div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:600">
+            <span>${esc(info?info.ad:x.k)}</span><span>${x.v.d}/${x.v.t} · %${x.p}</span></div>
+          ${barHtml(x.p)}
+          <div class="note" style="margin-top:6px">${info?info.calis:''}</div>
+        </div>`}).join('') || '<div class="note">Belirgin zayıf alan yok.</div>'}
+    </div>
+    <div class="panel">
+      <h2 class="serif" style="font-size:15px">Yanlış ve boş sorular (${yanlisSorular.length})</h2>
+      <div class="tbl-scroll" style="margin-top:8px"><table>
+        <thead><tr><th class="num">Soru</th><th>Bölüm</th><th>Beceri</th>
+          <th>Doğru</th><th>Verilen</th><th class="num">Değişim</th><th class="num">Süre</th></tr></thead>
+        <tbody>${yanlisSorular.map(a=>`<tr>
+          <td class="num">${a.soru_no}</td>
+          <td style="font-size:12.5px">${esc(SECNAME[a.bolum]||a.bolum)}</td>
+          <td style="font-size:12.5px">${esc((R.kumeBilgi(a.kume)||{}).ad||a.kume||'—')}</td>
+          <td style="color:var(--good);font-weight:650">${a.dogru_cevap}</td>
+          <td style="color:var(--bad)">${a.verilen_cevap||'boş'}</td>
+          <td class="num">${a.degisiklik||0}</td>
+          <td class="num">${a.sure_sn!=null?a.sure_sn+'sn':'—'}</td>
+        </tr>`).join('')||'<tr><td colspan="7" class="empty">Yanlış yok.</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+  $('modal').classList.add('on');
+}
+function closeModal(){$('modal').classList.remove('on')}
+
+/* ═══ SORU ANALİZİ ═══ */
+async function loadQuestions(){
+  const dn=$('qDeneme').value; if(!dn)return;
+  if(yerelMi()){
+    const m={};
+    yerelYukle().filter(r=>String(r.deneme_no)===String(dn)).forEach(r=>{
+      (r._cevaplar||[]).forEach(a=>{
+        const k=a.soru_no;
+        m[k]=m[k]||{deneme_no:+dn,soru_no:k,bolum:a.bolum,kume:a.kume,
+          cozen:0,dogru:0,yanlis:0,bos:0,toplam_degisiklik:0,dogruyu_bozdu:0,duzeltti:0,sure:0};
+        const o=m[k]; o.cozen++;
+        if(a.sonuc==='dogru')o.dogru++; else if(a.sonuc==='yanlis')o.yanlis++; else o.bos++;
+        o.toplam_degisiklik+=a.degisiklik||0;
+        if(a.degisiklik>0 && a.ilk_dogru_muydu && a.sonuc!=='dogru') o.dogruyu_bozdu++;
+        if(a.degisiklik>0 && !a.ilk_dogru_muydu && a.sonuc==='dogru') o.duzeltti++;
+        o.sure+=a.sure_sn||0;
+      });
+    });
+    QSTATS=Object.values(m).map(o=>({...o,
+      basari_yuzde:Math.round(1000*o.dogru/Math.max(1,o.cozen))/10,
+      ort_sure_sn:Math.round(10*o.sure/Math.max(1,o.cozen))/10}));
+    renderQuestions(); return;
+  }
+  const {data,error}=await sb.from('ydt_soru_istatistik').select('*').eq('deneme_no',dn);
+  if(error){toast('Alınamadı: '+error.message);return}
+  QSTATS=data||[]; renderQuestions();
+}
+function renderQuestions(){
+  const R=window.YDT_REHBER, s=$('qSort').value;
+  const rows=[...QSTATS].sort((a,b)=>
+    s==='no'?a.soru_no-b.soru_no :
+    s==='bozdu'?(b.dogruyu_bozdu||0)-(a.dogruyu_bozdu||0) :
+    s==='sure'?(b.ort_sure_sn||0)-(a.ort_sure_sn||0) :
+    (a.basari_yuzde||0)-(b.basari_yuzde||0));
+  $('qRows').innerHTML = rows.length ? rows.map(q=>`
+    <tr><td class="num"><b>${q.soru_no}</b></td>
+      <td style="font-size:12.5px">${esc(SECNAME[q.bolum]||q.bolum)}</td>
+      <td style="font-size:12.5px">${esc((R.kumeBilgi(q.kume)||{}).ad||q.kume||'—')}</td>
+      <td class="num">%${q.basari_yuzde??0}</td>
+      <td style="width:90px">${barHtml(q.basari_yuzde||0)}</td>
+      <td class="num">${q.bos}</td>
+      <td class="num" style="color:var(--bad)">${q.dogruyu_bozdu||0}</td>
+      <td class="num" style="color:var(--good)">${q.duzeltti||0}</td>
+      <td class="num">${q.ort_sure_sn??'—'}</td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">Bu deneme için henüz veri yok.</td></tr>`;
+}
+
+/* ═══ BECERİ HARİTASI ═══ */
+async function loadKume(){
+  if(yerelMi()){
+    const f=$('kDeneme')?$('kDeneme').value:'';
+    const agg={};
+    yerelYukle().filter(r=>!f||String(r.deneme_no)===String(f)).forEach(r=>{
+      Object.entries(r.kume_analizi||{}).forEach(([k,v])=>{
+        agg[k]=agg[k]||{d:0,t:0}; agg[k].d+=v.d; agg[k].t+=v.t;
+      });
+    });
+    const R=window.YDT_REHBER;
+    const list=Object.entries(agg).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),n:v.t}))
+      .sort((a,b)=>a.p-b.p);
+    $('kumeList').innerHTML = list.length ? list.map((x,i)=>{
+      const info=R.kumeBilgi(x.k);
+      return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:600">
+          <span>${i<3?'⚠ ':''}${esc(info?info.ad:x.k)}</span>
+          <span style="font-variant-numeric:tabular-nums">%${x.p} · ${x.n} cevap</span></div>
+        ${barHtml(x.p)}
+        ${i<3&&info?`<div class="note" style="margin-top:7px"><b>Sınıfa öneri:</b> ${info.calis}</div>`:''}
+      </div>`}).join('') : '<div class="empty">Henüz veri yok.</div>';
+    return;
+  }
+  let q=sb.from('ydt_kume_istatistik').select('*');
+  const f=$('kDeneme').value; if(f) q=q.eq('deneme_no',f);
+  const {data,error}=await q;
+  if(error){toast('Alınamadı: '+error.message);return}
+  const R=window.YDT_REHBER, agg={};
+  (data||[]).forEach(r=>{
+    agg[r.kume]=agg[r.kume]||{n:0,top:0};
+    agg[r.kume].n+=r.soru_cevap; agg[r.kume].top+=r.basari_yuzde*r.soru_cevap;
+  });
+  const list=Object.entries(agg).map(([k,v])=>({k,p:Math.round(v.top/v.n),n:v.n}))
+    .sort((a,b)=>a.p-b.p);
+  $('kumeList').innerHTML = list.length ? list.map((x,i)=>{
+    const info=R.kumeBilgi(x.k);
+    return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:600">
+        <span>${i<3?'⚠ ':''}${esc(info?info.ad:x.k)}</span>
+        <span style="font-variant-numeric:tabular-nums">%${x.p} · ${x.n} cevap</span></div>
+      ${barHtml(x.p)}
+      ${i<3&&info?`<div class="note" style="margin-top:7px"><b>Sınıfa öneri:</b> ${info.calis}</div>`:''}
+    </div>`}).join('')
+    : '<div class="empty">Henüz veri yok.</div>';
+}
+
+/* ═══ DEĞİŞİM ═══ */
+async function loadDegisim(){
+  let data;
+  if(yerelMi()){
+    const m={};
+    yerelYukle().forEach(r=>{
+      const k=r._kimlik;
+      m[k]=m[k]||{ogrenci_no:k,_ad:r._ad,_soyad:r._soyad,kazanilan:0,kaybedilen:0,notr:0,deneme_sayisi:0};
+      m[k].kazanilan+=r.dyd_yanlis_dogru||0; m[k].kaybedilen+=r.dyd_dogru_yanlis||0;
+      m[k].notr+=r.dyd_yanlis_yanlis||0; m[k].deneme_sayisi++;
+    });
+    data=Object.values(m).map(o=>({...o,net_kazanc:o.kazanilan-o.kaybedilen}));
+    data.forEach(o=>AD_ONBELLEK.set(o.ogrenci_no,(o._ad+' '+o._soyad).trim()));
+  } else {
+    const r=await sb.from('ydt_degisiklik_ozet').select('*');
+    if(r.error){return} data=r.data;
+  }
+  const rows=(data||[]).sort((a,b)=>a.net_kazanc-b.net_kazanc);
+  $('dRows').innerHTML = rows.length ? rows.map(r=>{
+    const nk=r.net_kazanc;
+    const yorum = nk<-1 ? 'İlk sezgisine güvenmeli; tereddütle değiştirmesi net kaybettiriyor.'
+              : nk>1 ? 'Kontrol alışkanlığı işe yarıyor; bu davranışı sürdürmeli.'
+              : 'Değiştirme davranışı nötr.';
+    return `<tr>
+      <td>${esc(AD_ONBELLEK.get(r.ogrenci_no)||('# '+String(r.ogrenci_no||'').slice(0,8)))}</td>
+      <td class="num">${r.deneme_sayisi}</td>
+      <td class="num" style="color:var(--good)">${r.kazanilan}</td>
+      <td class="num" style="color:var(--bad)">${r.kaybedilen}</td>
+      <td class="num" style="color:var(--muted)">${r.notr}</td>
+      <td class="num"><b style="color:${nk<0?'var(--bad)':nk>0?'var(--good)':'inherit'}">${nk>0?'+':''}${nk}</b></td>
+      <td style="font-size:12.5px;color:var(--muted)">${yorum}</td></tr>`}).join('')
+    : `<tr><td colspan="7" class="empty">Henüz veri yok.</td></tr>`;
+}
+</script>
+</body>
+</html>
