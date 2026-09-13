@@ -44,7 +44,7 @@ button{border:none;background:none;cursor:pointer;color:inherit}
 .hero .crest-box{width:62px;height:62px;flex:0 0 62px;border-radius:16px;
   background:rgba(255,255,255,.06);border:1px solid rgba(201,162,39,.45);padding:5px}
 .hero h1{font-size:24px;line-height:1.15;font-weight:600}
-.hero .kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gilt);font-weight:700;margin-bottom:4px}
+.hero .kicker{font-size:11px;letter-spacing:2px;color:var(--gilt);font-weight:700;margin-bottom:4px}
 .hero .sub{font-size:13.5px;color:#B9C6D6;margin-top:5px}
 .who{margin-top:-18px;position:relative;z-index:2}
 .who-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
@@ -206,7 +206,7 @@ footer .by b{color:var(--ink);font-weight:650}
   <div class="hero"><div class="wrap hero-inner">
     <div class="crest-box" id="crestHero"></div>
     <div>
-      <div class="kicker">Royal British Academy</div>
+      <div class="kicker">ROYAL BRITISH ACADEMY</div>
       <h1 class="serif">YDT Deneme Sınavları</h1>
       <div class="sub">KeyKampüs Kurs Merkezi · YKS Yabancı Dil Testi</div>
     </div>
@@ -247,7 +247,7 @@ footer .by b{color:var(--ink);font-weight:650}
   <div class="hero"><div class="wrap hero-inner">
     <div class="crest-box" id="crestKvkk"></div>
     <div>
-      <div class="kicker">Royal British Academy</div>
+      <div class="kicker">ROYAL BRITISH ACADEMY</div>
       <h1 class="serif">Kişisel Verilerin Korunması</h1>
       <div class="sub" id="kvkkKurum">KeyKampüs Kurs Merkezi</div>
     </div>
@@ -24263,7 +24263,7 @@ function crestSVG(){return `<svg class="crest" viewBox="0 0 100 118" role="img" 
   </g>
 </svg>`}
 function mountCrest(el){
-  const img=new Image(); img.src="rba-arma.png"; img.alt="Royal British Academy";
+  const img=new Image(); img.src="rba-logo.png"; img.alt="Royal British Academy";
   img.style.cssText="width:100%;height:100%;object-fit:contain";
   img.onload=()=>{el.innerHTML="";el.appendChild(img)};
   img.onerror=()=>{el.innerHTML=crestSVG()};
