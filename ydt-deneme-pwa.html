@@ -24839,17 +24839,7 @@ buildHome().then(checkRun);
 window.addEventListener('online',()=>{ flushQueue(); fetchAktif(true).then(renderExamList); });
 flushQueue();
 setInterval(()=>{ if(navigator.onLine) flushQueue(); }, 60000);   // dakikada bir dene
-if('serviceWorker' in navigator){
-  // Kayıt açılışı bekletmesin: sayfa yüklendikten sonra, sessizce.
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js')
-      .then(r=>{ if(r.update) setTimeout(()=>r.update().catch(()=>{}), 30000); })
-      .catch(()=>{});
-  });
-}
-window.addEventListener('beforeunload',e=>{
-  if(tick && $('exam').classList.contains('on')){e.preventDefault();e.returnValue=''}
-});
+// Service Worker kaydı geçici olarak kapalı (bkz. sw.js).);
 document.addEventListener('visibilitychange',()=>{ if(tick){ stampTime(); saveRun(); } });
 window.addEventListener('pagehide',()=>{ if(tick){ stampTime(); saveRun(); } });
 </script>
