@@ -1,16 +1,30 @@
-/* YDT Deneme — Service Worker
-   Amaç: zayıf/askıda kalan hücresel bağlantıda uygulamanın AÇILMAMASINI önlemek.
-   Strateji: uygulama kabuğu için önbellek öncelikli (cache-first) + arka planda
-   sessiz güncelleme. Ağ asla açılışı bekletmez. */
-const CACHE = 'ydt-deneme-v4';
-const SHELL = 'ydt-deneme-pwa.html';
-const ASSETS = [SHELL,'manifest.json','rba-logo.png','icon-192.png','icon-512.png'];
-const AG_ZAMAN_ASIMI = 4000;   // ms — bu süreyi geçen ağ isteği bırakılır
+/* YDT Deneme — Service Worker (v5)
+   Royal British Academy · KeyKampüs Kurs Merkezi
+
+   v4'teki hata: her sayfa isteğine öğrenci uygulaması döndürülüyordu; kök
+   adres ve öğretmen paneli yanlış dosyayı alıyor, önbellek boşsa istek
+   ERR_FAILED ile düşüyordu. v5 her adresi kendi dosyasıyla eşler ve her
+   durumda bir yedeği vardır. */
+
+const CACHE = 'ydt-deneme-v5';
+const GIRIS  = 'index.html';
+const ASSETS = [
+  'index.html',
+  'ydt-deneme-pwa.html',
+  'ydt-ogretmen.html',
+  'kvkk.js',
+  'manifest.json',
+  'rba-logo.png',
+  'rba-arma.png',
+  'icon-192.png',
+  'icon-512.png'
+];
+const ZAMAN_ASIMI = 6000;
 
 self.addEventListener('install', e=>{
   e.waitUntil(
     caches.open(CACHE)
-      // allSettled: eksik bir ikon yüzünden tüm kurulum başarısız olmasın
+      // allSettled: eksik tek bir dosya tüm kurulumu düşürmesin
       .then(c=>Promise.allSettled(ASSETS.map(a=>c.add(new Request(a,{cache:'reload'})))))
       .then(()=>self.skipWaiting())
   );
@@ -24,52 +38,57 @@ self.addEventListener('activate', e=>{
   );
 });
 
-/* Ağ isteğini zaman aşımıyla dener; süre dolarsa reddeder. */
-function agZamanAsimiyla(req){
+function agZamanAsimiyla(req, ms){
   return new Promise((coz, red)=>{
-    const zaman = setTimeout(()=>red(new Error('timeout')), AG_ZAMAN_ASIMI);
-    fetch(req).then(r=>{clearTimeout(zaman);coz(r)}).catch(err=>{clearTimeout(zaman);red(err)});
+    const t = setTimeout(()=>red(new Error('timeout')), ms || ZAMAN_ASIMI);
+    fetch(req).then(r=>{clearTimeout(t);coz(r)}).catch(e=>{clearTimeout(t);red(e)});
   });
 }
 
 self.addEventListener('fetch', e=>{
   const req = e.request;
-  if(req.method !== 'GET') return;                       // sonuç POST'ları dokunulmaz
+  if(req.method !== 'GET') return;                    // sonuç gönderimleri dokunulmaz
   const url = new URL(req.url);
-  if(url.origin !== location.origin) return;             // Supabase/Pusula doğrudan ağa
+  if(url.origin !== location.origin) return;          // Supabase doğrudan ağa gider
 
-  // Sayfa gezinmesi: her koşulda kabuğu önbellekten ver.
-  if(req.mode === 'navigate'){
-    e.respondWith(
-      caches.match(SHELL).then(hit=>{
-        if(hit){
-          // arka planda sessizce tazele, kullanıcı beklemez
-          e.waitUntil(agZamanAsimiyla(new Request(SHELL,{cache:'reload'}))
-            .then(r=>r && r.ok && caches.open(CACHE).then(c=>c.put(SHELL,r.clone())))
-            .catch(()=>{}));
-          return hit;
-        }
-        return agZamanAsimiyla(req).then(r=>{
-          const kopya=r.clone();
-          caches.open(CACHE).then(c=>c.put(SHELL,kopya)).catch(()=>{});
-          return r;
-        });
-      })
-    );
-    return;
+  // Kök adres "/" → index.html
+  let anahtar = req;
+  if(url.pathname === '/' || url.pathname === '') {
+    anahtar = new Request(new URL(GIRIS, location.origin).href, {cache:'reload'});
   }
 
-  // Diğer yerel varlıklar: önbellek öncelikli, yoksa zaman aşımlı ağ.
-  e.respondWith(
-    caches.match(req).then(hit=>{
-      if(hit) return hit;
-      return agZamanAsimiyla(req).then(r=>{
-        if(r && r.ok){
-          const kopya=r.clone();
-          caches.open(CACHE).then(c=>c.put(req,kopya)).catch(()=>{});
-        }
-        return r;
-      }).catch(()=>caches.match(SHELL));
-    })
-  );
+  e.respondWith((async ()=>{
+    const c = await caches.open(CACHE);
+
+    // 1) Önbellekte varsa hemen ver, arka planda sessizce tazele
+    const hit = await c.match(anahtar, {ignoreSearch:true});
+    if(hit){
+      e.waitUntil(
+        agZamanAsimiyla(new Request(anahtar.url, {cache:'reload'}))
+          .then(r=>{ if(r && r.ok) return c.put(anahtar, r.clone()); })
+          .catch(()=>{})
+      );
+      return hit;
+    }
+
+    // 2) Yoksa ağdan al ve önbelleğe koy
+    try{
+      const r = await agZamanAsimiyla(anahtar);
+      if(r && r.ok) c.put(anahtar, r.clone()).catch(()=>{});
+      return r;
+    }catch(err){
+      // 3) Ağ da yoksa: sayfa isteğiyse giriş sayfasını ver, o da yoksa açıklayıcı yanıt
+      if(req.mode === 'navigate'){
+        const giris = await c.match(GIRIS) || await c.match('index.html');
+        if(giris) return giris;
+        return new Response(
+          '<!doctype html><meta charset="utf-8"><title>Bağlantı yok</title>'+
+          '<body style="font-family:system-ui;background:#F7F3EA;color:#2A0E4F;padding:40px;text-align:center">'+
+          '<h2>Bağlantı kurulamadı</h2><p>İnternete bağlanıp sayfayı yenileyin.</p></body>',
+          {headers:{'Content-Type':'text/html; charset=utf-8'}, status:503}
+        );
+      }
+      return Response.error();
+    }
+  })());
 });

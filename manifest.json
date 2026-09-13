@@ -2,7 +2,7 @@
   "name": "YDT Deneme Sınavları · Royal British Academy",
   "short_name": "YDT Deneme",
   "description": "KeyKampüs Kurs Merkezi YKS Yabancı Dil Testi deneme uygulaması",
-  "start_url": "ydt-deneme-pwa.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

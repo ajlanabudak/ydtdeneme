@@ -24263,7 +24263,7 @@ function crestSVG(){return `<svg class="crest" viewBox="0 0 100 118" role="img" 
   </g>
 </svg>`}
 function mountCrest(el){
-  const img=new Image(); img.src="rba-logo.png"; img.alt="Royal British Academy";
+  const img=new Image(); img.src="rba-arma.png"; img.alt="Royal British Academy";
   img.style.cssText="width:100%;height:100%;object-fit:contain";
   img.onload=()=>{el.innerHTML="";el.appendChild(img)};
   img.onerror=()=>{el.innerHTML=crestSVG()};
