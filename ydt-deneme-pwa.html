@@ -355,6 +355,7 @@ footer .by b{color:var(--ink);font-weight:650}
     <div class="panel"><h3 class="serif">Sınav içi davranışın</h3><div id="behaviour"></div></div>
     <div class="acts">
       <button class="btn-lg btn-fill" onclick="reviewWrong()">Yanlışlarımı tek tek gör</button>
+      <button class="btn-lg btn-line" onclick="ogrenciPdfIndir()">Sonucunu PDF olarak indir</button>
       <button class="btn-lg btn-line" id="btnIndir" onclick="downloadReport()">Raporu indir</button>
       <button class="btn-lg btn-line" onclick="goHome()">Ana sayfa</button>
     </div>
@@ -599,7 +600,7 @@ const KUME = {
     calis: "Boşluktan <b>sonraki</b> repliği mutlaka oku: cevabı asıl orası belirler. Konuşmacı \"Exactly\" diyorsa boşlukta bir onay, \"Really?\" diyorsa şaşırtıcı bir bilgi vardır. Şıkkı yerleştirip diyaloğu baştan sona sesli oku; kopan yer varsa yanlıştır."
   },
   "durum-ton": {
-    ad: "Durum ve üslup (restatement)",
+    ad: "Durum ve üslup",
     ne: "Verilen durumda söylenecek söz; kibarlık, iğneleme, uyarı tonu.",
     calis: "Soru kökündeki duygu sözcüğünü (politely, sarcastically, to encourage) daire içine al — cevabı o belirler. İğneleme sorularında doğru şık kelime anlamıyla olumlu ama bağlamda iğneleyicidir; nazik ret sorularında ise mutlaka bir alternatif sunulur. Kaba, tehditkâr veya konuyu tamamen değiştiren şıklar her zaman yanlıştır."
   }
@@ -611,7 +612,7 @@ const BOLUM_TAKTIK = {
   "gramer":"En yüksek verimli bölüm. Edat ve bağlaç kalıpları sınırlı sayıda; sistemli çalışan öğrenci 7 sorunun 6-7'sini alır.",
   "cloze":"Parçanın tamamını bir kez hızlıca oku, sonra boşluklara dön. Boşluğu tek başına değil, önceki ve sonraki cümleyle birlikte değerlendir.",
   "cumle-tamamlama":"Önce verilen yarının anlamını ve bağlacın yönünü belirle, sonra şıklara bak. Şıktan başlamak bu bölümde en sık yapılan hatadır.",
-  "okuma":"5 parça, 15 soru — sınavın üçte biri. Zamanının yaklaşık 45 dakikasını buraya ayır. Parçayı bir kez dikkatli oku, soruları parçaya dönerek cevapla; ezberden asla cevaplama.",
+  "okuma":"5 parça, 15 soru. Zamanının yaklaşık üçte birini (45 dakika) buraya ayır. Parçayı bir kez dikkatli oku, soruları parçaya dönerek cevapla; ezberden asla cevaplama.",
   "diyalog":"Boşluktan sonraki repliği oku. Bu tek alışkanlık bölüm netini belirgin biçimde yükseltir.",
   "anlamca-yakin":"Orijinal cümlenin yapısını (zıtlık mı, koşul mu, vurgu mu) belirle; doğru şık aynı ilişkiyi farklı sözcüklerle kurar. Kelime benzerliği tuzaktır.",
   "durum":"Soru kökündeki üslup sözcüğü cevabı belirler. Uç, kaba veya alakasız şıkları hemen ele; genelde 2 şıka iniyorsun.",
@@ -903,15 +904,15 @@ return {
    AKTIF:false iken ad-soyad şifrelenmez ve buluta gönderilmez;
    uygulama yalnızca yerel modda çalışır. */
 const KVKK_AYAR = {
-  AKTIF: false,
+  AKTIF: true,
   MOD: "rsa",          // "rsa" (önerilen) veya "parola" (mevcut uygulamalarla uyum için)
-  TUZ: "",             // takma kimlik tuzu — üç uygulamada AYNI olmalı
-  ACIK_ANAHTAR: null,  // rsa modu: anahtar-uret.html'in verdiği açık anahtar
+  TUZ: "RBA YDT için doğru kurs.",             // takma kimlik tuzu — üç uygulamada AYNI olmalı
+  ACIK_ANAHTAR: {"alg":"RSA-OAEP-256","e":"AQAB","key_ops":["encrypt"],"kty":"RSA","n":"yI9zTnxyTBmJN0QMmTSJMIToChHDJU2ZWW_c86O51nFkiWlpQaMO8z1NyST9LGZcqq-tMy_NIJuBRLa6TYhqJmd6vsh4dkSaS5n1E552TKp2haGvCLz6yWbUBhTPbMx9YFWH-E9CHyXzQfJWpae0EhkZbhj6ydThgQJVlkji26EGH-dZav72xOz-qGbhXhn9qd8KKtyn-POuIxV2mbR0NARRgnZl5H7s5_CIYuTMBVCJOrjmbnvuyblth96G6M_tTua7FTSUhq-T00BirJWag52TvFB5iCixV1XTiYUC7vGky6FM9eei94-KGRJS51rnpM0hdHaZxatDjPECY3xWNQ"},  // rsa modu: anahtar-uret.html'in verdiği açık anahtar
   PAROLA: ""           // parola modu: CEFR/Akademik Eksen'de kullanılan uzun anahtar
 };
 
 /* ═════════ AYARLAR ═════════ */
-const SINAV_SIFRESI = "YDT2027";   // öğretmenin sınav günü öğrencilere söylediği şifre
+const SINAV_SIFRESI = b64u("WURUMjAyNw==");   // öğretmenin sınav günü öğrencilere söylediği şifre
 
 const CFG = {
   YEREL_MOD: false,        // true: hiçbir veri buluta gitmez, sonuçlar dosyayla toplanır
@@ -925,7 +926,7 @@ const CFG = {
 const SECTIONS = [
  ["kelime","Kelime Bilgisi",8],["gramer","Dil Bilgisi",7],["cloze","Cloze Test",5],
  ["cumle-tamamlama","Cümle Tamamlama",8],["okuma","Okuma Parçaları",15],["diyalog","Diyalog Tamamlama",5],
- ["anlamca-yakin","Anlamca Yakın Cümle",5],["durum","Durum (Restatement)",5],
+ ["anlamca-yakin","Anlamca Yakın Cümle",5],["durum","Durum",5],
  ["paragraf-tamamlama","Paragraf Tamamlama",5],["ing-tr","İngilizce → Türkçe",6],
  ["tr-ing","Türkçe → İngilizce",6],["akis-bozan","Akışı Bozan Cümle",5]];
 const SECNAME = Object.fromEntries(SECTIONS.map(s=>[s[0],s[1]]));
@@ -1464,6 +1465,7 @@ function attemptPayload(kimlik){
   const g=res.degisiklik;
   const o=load(LS.kvkk,{});
   return {
+    id:crypto.randomUUID(),   // istemci üretir: sunucudan RETURNING ile okuma ihtiyacı kalmaz
     kimlik_sifreli:(kimlik&&kimlik.kimlik_sifreli)||null,
     ogrenci_no:(kimlik&&kimlik.ogrenci_no)||null,
     kvkk_surum:o.surum||null, kvkk_onay_at:o.at||null,
@@ -1492,9 +1494,9 @@ async function sendAll(){
   }
   const kimlik = await kimlikPaketi();
   if(CFG.SUPABASE_ANON_KEY){
-    const r = await sbPost('ydt_attempts', attemptPayload(kimlik), {Prefer:'return=representation'});
-    const [row] = await r.json();
-    const rows = res.answers.map(a=>({attempt_id:row.id, deneme_no:res.deneme_no, ...a}));
+    const payload = attemptPayload(kimlik);
+    await sbPost('ydt_attempts', payload, {Prefer:'return=minimal'});
+    const rows = res.answers.map(a=>({attempt_id:payload.id, deneme_no:res.deneme_no, ...a}));
     await sbPost('ydt_answers', rows, {Prefer:'return=minimal'});
   }
   if(CFG.PUSULA_URL){
@@ -1564,6 +1566,103 @@ async function flushQueue(manual){
   renderPending();
   if(q.length>rest.length) toast((q.length-rest.length)+' bekleyen sonuç gönderildi.');
   else if(manual) toast('Hâlâ bağlantı yok. Sonucun cihazda güvende.');
+}
+function ogrenciPdfGovde(){
+  const R=window.YDT_REHBER;
+  const net = Number(res.net).toFixed(2).replace('.',',');
+  const yuzde = Math.round(100*(res.dogru||0)/Math.max(1,(res.dogru||0)+(res.yanlis||0)+(res.bos||0)));
+  const zayif = Object.entries(res.kume_analizi||{}).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),v}))
+    .filter(x=>x.v.t>=2).sort((a,b)=>a.p-b.p).slice(0,5);
+  const yanlisSorular = (res.answers||[]).filter(a=>a.sonuc!=='dogru');
+  const g=res.degisiklik||{};
+  const sn=res.sure_kullanilan_sn||0, sure=Math.floor(sn/60)+' dk '+(sn%60)+' sn';
+  const tarih=new Date(res.finished_at||Date.now()).toLocaleDateString('tr-TR',
+    {day:'numeric',month:'long',year:'numeric'});
+  return `
+  <div class="hdr">
+    <div>
+      <div class="brand">Royal British Academy</div>
+      <h1 class="serif">YDT Deneme Sonuç Raporu</h1>
+      <div class="meta">${esc((who.ad||'')+' '+(who.soyad||''))} · KeyKampüs · Deneme ${res.deneme_no} · ${tarih}</div>
+    </div>
+    <div class="badge"><b>${net}</b><span>NET</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>${res.dogru}</b><span>Doğru</span></div>
+    <div class="kpi"><b>${res.yanlis}</b><span>Yanlış</span></div>
+    <div class="kpi"><b>${res.bos}</b><span>Boş</span></div>
+    <div class="kpi"><b>${sure}</b><span>Süre</span></div>
+    <div class="kpi"><b>%${yuzde}</b><span>Başarı</span></div>
+  </div>
+  <div class="callout">
+    <b>Cevap değiştirme:</b> Toplam ${g.toplam||0} değişiklik, ${g.soru||0} soruda.
+    Yanlıştan doğruya ${g.yanlis_dogru||0}, doğrudan yanlışa ${g.dogru_yanlis||0}.
+    Net etki: ${((g.yanlis_dogru||0)-(g.dogru_yanlis||0))>=0?'+':''}${(g.yanlis_dogru||0)-(g.dogru_yanlis||0)} soru.
+  </div>
+  <h2 class="sec">Öncelikli Çalışma Alanları</h2>
+  <table><thead><tr><th>Beceri</th><th class="n">Başarı</th><th></th></tr></thead><tbody>
+  ${zayif.length ? zayif.map(x=>{
+    const info=(R.kumeBilgi(x.k)||{});
+    const c=x.p>=70?'':(x.p>=45?'mid':'low');
+    return `<tr><td>${esc(info.ad||x.k)}<div style="font-size:10px;color:#5E6B7C;margin-top:2px">${esc(info.calis||'')}</div></td>
+      <td class="n">${x.v.d}/${x.v.t} · %${x.p}</td>
+      <td><div class="bar"><i class="${c}" style="width:${x.p}%"></i></div></td></tr>`;
+  }).join('') : '<tr><td colspan="3">Belirgin zayıf alan yok.</td></tr>'}
+  </tbody></table>
+  <h2 class="sec">Yanlış ve Boş Sorular (${yanlisSorular.length})</h2>
+  <table><thead><tr><th class="n">Soru</th><th>Bölüm</th><th>Doğru</th><th>Verilen</th></tr></thead><tbody>
+  ${yanlisSorular.length ? yanlisSorular.map(a=>`<tr><td class="n">${a.soru_no}</td>
+    <td>${esc(SECNAME[a.bolum]||a.bolum)}</td>
+    <td style="color:#4F7A5B;font-weight:650">${a.dogru_cevap}</td>
+    <td style="color:#B3402F">${a.verilen_cevap||'boş'}</td></tr>`).join('') : '<tr><td colspan="4">Yanlış yok.</td></tr>'}
+  </tbody></table>`;
+}
+function ogrenciPdfIndir(){
+  if(!res){ toast('Önce bir deneme tamamlamalısın.'); return; }
+  const win = window.open('', '_blank');
+  if(!win){ toast('Açılır pencere engellendi; tarayıcı adres çubuğundan izin ver.'); return; }
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<title>YDT Rapor — ${esc((who.ad||'')+' '+(who.soyad||''))}</title>
+<style>
+@page{margin:16mm}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#16202E;margin:0;padding:0 4px}
+.serif{font-family:Georgia,"Iowan Old Style",serif}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  border-bottom:2px solid #2A0E4F;padding-bottom:14px;margin-bottom:16px}
+.hdr .brand{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#6B3FA0;font-weight:700}
+.hdr h1{font-size:19px;margin:2px 0 4px}
+.hdr .meta{font-size:11px;color:#5E6B7C}
+.badge{width:66px;height:66px;border-radius:50%;border:3px solid #6B3FA0;flex:0 0 66px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.badge b{font-size:17px;color:#2A0E4F;line-height:1.05}
+.badge span{font-size:7.5px;color:#6B3FA0;letter-spacing:.4px;margin-top:2px}
+.kpis{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}
+.kpi{background:#F7F3EA;border:1px solid #DFD8CA;border-radius:9px;padding:8px 13px;min-width:74px}
+.kpi b{display:block;font-size:17px;color:#2A0E4F}
+.kpi span{font-size:9px;color:#5E6B7C;text-transform:uppercase;letter-spacing:.3px}
+.callout{background:#F3EEF9;border:1px solid #DDD0EE;border-left:4px solid #6B3FA0;
+  border-radius:8px;padding:11px 13px;margin:14px 0;font-size:12px;line-height:1.6}
+.callout b{color:#2A0E4F}
+h2.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#6B3FA0;
+  border-bottom:1px solid #DFD8CA;padding-bottom:5px;margin:18px 0 9px}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid #DFD8CA}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#5E6B7C}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar{background:#EDE7DB;border-radius:4px;height:6px;width:80px;overflow:hidden}
+.bar i{display:block;height:100%;background:#4F7A5B}
+.bar i.mid{background:#C9862A}.bar i.low{background:#B3402F}
+footer{margin-top:22px;padding-top:10px;border-top:1px solid #DFD8CA;font-size:9.5px;color:#5E6B7C;
+  text-align:center;line-height:1.7}
+tr{page-break-inside:avoid}
+</style></head><body>${ogrenciPdfGovde()}
+<footer>Royal British Academy · KeyKampüs Kurs Merkezi<br>
+Bu belge senin kişisel verini içerir — kendi sonucun, istersen okulundaki öğretmeninle de paylaşabilirsin.<br>
+Oluşturulma: ${new Date().toLocaleDateString('tr-TR')}</footer>
+</body></html>`);
+  win.document.close();
+  setTimeout(()=>{ try{ win.focus(); win.print(); }catch(e){} }, 350);
 }
 function downloadReport(){
   const blob=new Blob([JSON.stringify(res,null,2)],{type:'application/json'});
