@@ -252,6 +252,11 @@ footer .by b{color:var(--ink);font-weight:650}
         <input id="inSifre" type="password" placeholder="Sınav şifresi" autocomplete="off"
           inputmode="text" enterkeyhint="done" style="letter-spacing:2px">
       </div>
+      <div class="note" style="margin-top:10px;text-align:left">
+        <button onclick="kvkkGoster(true)" style="color:var(--lion);font-weight:650;
+          text-decoration:underline;font-size:13px">Kişisel verilerin nasıl korunuyor?</button>
+        <span id="modNot"></span>
+      </div>
       <div class="who-note" id="whoNote">Adını, soyadını ve öğretmeninin verdiği sınav şifresini yaz.</div>
     </div></div>
     <div id="netBar"></div>
@@ -264,11 +269,6 @@ footer .by b{color:var(--ink);font-weight:650}
       <h3>Bölümler ve soru sayıları</h3>
       <div class="info-grid" id="structGrid"></div>
       <div class="who-note" style="margin-top:12px">Puanlama: <b>4 yanlış 1 doğruyu götürür.</b> Süre dolduğunda sınav olduğu gibi değerlendirilir.</div>
-    </div>
-    <div class="note" style="margin-top:18px;text-align:left">
-      <button onclick="kvkkGoster(true)" style="color:var(--lion);font-weight:650;
-        text-decoration:underline;font-size:13px">Kişisel verilerin nasıl korunuyor?</button>
-      <span id="modNot"></span>
     </div>
     <footer>
       <div class="brand serif">Royal British Academy · KeyKampüs Kurs Merkezi</div>
@@ -24434,7 +24434,7 @@ async function buildHome(){
   ['inAd','inSoyad'].forEach(id=>$(id).addEventListener('input',()=>{
     store(LS.who,{ad:$('inAd').value.trim(),soyad:$('inSoyad').value.trim()}); updateWhoNote();
   }));
-  $('inSifre').addEventListener('input',()=>{ $('inSifre').style.borderColor=''; });
+  $('inSifre').addEventListener('input',()=>{ $('inSifre').style.borderColor=''; updateWhoNote(); });
   updateWhoNote();
   const mn=$('modNot');
   if(mn) mn.innerHTML = CFG.YEREL_MOD
@@ -24448,10 +24448,13 @@ async function buildHome(){
   fetchAktif().then(()=>renderExamList());
 }
 function updateWhoNote(){
-  const ok=$('inAd').value.trim() && $('inSoyad').value.trim();
-  $('whoNote').innerHTML = ok
-    ? `Hazırsın <b>${esc($('inAd').value.trim())}</b> — aşağıdan bir deneme seç.`
-    : `Adını yaz, sonra aşağıdan bir deneme seç.`;
+  const adOk=$('inAd').value.trim() && $('inSoyad').value.trim();
+  const sifreOk=$('inSifre').value.trim().length>0;
+  $('whoNote').innerHTML = !adOk
+    ? `Adını yaz, sonra aşağıdan bir deneme seç.`
+    : !sifreOk
+    ? `<b>${esc($('inAd').value.trim())}</b>, önce öğretmeninin verdiği sınav şifresini gir.`
+    : `Hazırsın <b>${esc($('inAd').value.trim())}</b> — aşağıdan bir deneme seç.`;
 }
 let netDurum='bilinmiyor';
 async function fetchAktif(sessiz){
