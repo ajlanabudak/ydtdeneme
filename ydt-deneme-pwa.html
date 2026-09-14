@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="YDT Deneme">
 <title>YDT Deneme · Royal British Academy</title>
 <link rel="manifest" href="manifest.json">
+<script>
+try{ if(localStorage.getItem('ydt-theme')==='dark'){ document.documentElement.setAttribute('data-theme','dark'); } }catch(e){}
+</script>
 <style>
 :root{
   --night:#2A0E4F; --night-2:#3D1A6E; --parchment:#F7F3EA; --paper:#FFFFFF;
@@ -17,10 +20,17 @@
   --good:#4F7A5B; --bad:#B3402F; --warn:#C9862A;
   --r:14px; --pad:16px; --safe-b:env(safe-area-inset-bottom,0px);
 }
+:root[data-theme="dark"]{
+  --night:#1B0836; --night-2:#2A0E4F; --parchment:#241040; --paper:#331659;
+  --lion:#B993E8; --lion-dark:#E3D0F5; --gilt:#E8D9A8;
+  --ink:#F2EDE3; --muted:#C6B8DC; --line:#4A2472; --idle:#8E7BA8;
+  --good:#7FCB93; --bad:#F3937F; --warn:#E8B968;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  background:var(--parchment);color:var(--ink);min-height:100dvh;overscroll-behavior-y:none;line-height:1.5}
+  background:var(--parchment);color:var(--ink);min-height:100dvh;overscroll-behavior-y:none;line-height:1.5;
+  transition:background .2s,color .2s}
 .serif{font-family:Georgia,"Iowan Old Style","Times New Roman",serif}
 button,input,select{font-family:inherit;font-size:16px}
 button{border:none;background:none;cursor:pointer;color:inherit}
@@ -52,7 +62,7 @@ button{border:none;background:none;cursor:pointer;color:inherit}
 .who-row{display:flex;gap:10px}
 .who-row input{flex:1;min-width:0;padding:13px 12px;border:1.5px solid var(--line);
   border-radius:11px;background:var(--parchment)}
-.who-row input:focus{border-color:var(--lion);outline:none;background:#fff}
+.who-row input:focus{border-color:var(--lion);outline:none;background:var(--paper)}
 .who-note{font-size:12.5px;color:var(--muted);margin-top:9px}
 .who-note b{color:var(--ink)}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 12px;gap:10px}
@@ -78,6 +88,7 @@ button{border:none;background:none;cursor:pointer;color:inherit}
 .strip{display:flex;gap:2px;margin-top:11px;height:6px}
 .strip i{flex:1;background:#E8E2D6;border-radius:2px}
 .strip i.s{background:var(--good)}.strip i.w{background:var(--lion)}.strip i.f{background:var(--bad)}
+[data-theme="dark"] .strip i{background:#4A3D66}
 .info-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:15px}
 .info-card h3{font-size:14.5px;margin-bottom:9px}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;font-size:13px}
@@ -87,8 +98,10 @@ button{border:none;background:none;cursor:pointer;color:inherit}
   margin-top:14px;font-size:13px;color:var(--ink);line-height:1.6}
 .netbar button{margin-left:8px;font-size:13px;font-weight:650;color:var(--lion);
   text-decoration:underline;min-height:32px}
+[data-theme="dark"] .netbar{background:#4A3319;border-color:#6B4A26}
 .locked{background:#F3EEF9;border:1px solid #DDD0EE;border-radius:var(--r);padding:18px;
   text-align:center;font-size:14px;line-height:1.7;color:var(--ink)}
+[data-theme="dark"] .locked{background:#3A1B63;border-color:#5C2F8F}
 footer{margin-top:30px;padding:20px 0 calc(24px + var(--safe-b));border-top:1px solid var(--line);text-align:center}
 footer .brand{font-size:13.5px;font-weight:650}
 footer .by{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.7}
@@ -98,6 +111,7 @@ footer .by b{color:var(--ink);font-weight:650}
 #exam{padding-bottom:calc(96px + var(--safe-b))}
 .bar{position:sticky;top:0;z-index:20;background:rgba(247,243,234,.96);backdrop-filter:blur(8px);
   border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top,0px)) 0 9px}
+[data-theme="dark"] .bar{background:rgba(36,16,64,.94)}
 .bar-in{display:flex;align-items:center;gap:10px}
 .bar .qpos{font-size:13px;font-weight:650;flex:1;min-width:0}
 .bar .qpos small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;
@@ -126,9 +140,11 @@ footer .by b{color:var(--ink);font-weight:650}
   font-size:15.5px;line-height:1.5;min-height:52px}
 .opt:hover{border-color:var(--lion)}
 .opt.sel{border-color:var(--lion);background:#F0EAF7}
+[data-theme="dark"] .opt.sel{background:#4A2472}
 .opt .k{font-weight:750;color:var(--lion);flex:0 0 auto;min-width:19px}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(247,243,234,.97);
   backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px var(--pad) calc(10px + var(--safe-b))}
+[data-theme="dark"] .dock{background:rgba(36,16,64,.95)}
 .dock-in{max-width:760px;margin:0 auto;display:flex;gap:9px}
 .dock button{flex:1;min-height:52px;border-radius:12px;font-size:15.5px;font-weight:650}
 .b-prev{background:var(--paper);border:1.5px solid var(--line)}
@@ -172,10 +188,12 @@ footer .by b{color:var(--ink);font-weight:650}
 .row .lbl{font-weight:550}
 .row .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
 .track{grid-column:1/-1;background:#EDE7DB;border-radius:5px;height:9px;overflow:hidden}
+[data-theme="dark"] .track{background:#4A3D66}
 .fill{height:100%;border-radius:5px;background:var(--good)}
 .fill.mid{background:var(--lion)}.fill.low{background:var(--bad)}
 .advice{background:#F3EEF9;border:1px solid #DDD0EE;border-radius:12px;padding:14px;
   font-size:14px;line-height:1.7;margin-top:12px}
+[data-theme="dark"] .advice{background:#3A1B63;border-color:#5C2F8F}
 .advice h4{font-size:14px;margin-bottom:6px;color:var(--lion-dark)}
 .advice + .advice{margin-top:10px}
 .advice .qs{font-size:12.5px;color:var(--muted);margin-top:7px}
@@ -197,9 +215,16 @@ footer .by b{color:var(--ink);font-weight:650}
   .exam-list{grid-template-columns:1fr 1fr}
   .row{grid-template-columns:1fr 86px}
 }
+.theme-toggle{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:70;
+  width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);
+  border:1px solid rgba(201,162,39,.45);color:#F2EDE3;font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.theme-toggle:active{transform:scale(.92)}
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Karanlık modu aç/kapat" title="Karanlık mod">🌙</button>
 
 <!-- ANA SAYFA -->
 <section id="home" class="screen on">
@@ -24275,12 +24300,25 @@ function crestSVG(){return `<svg class="crest" viewBox="0 0 100 118" role="img" 
   </g>
 </svg>`}
 function mountCrest(el){
-  const img=new Image(); img.src="rba-logo.png"; img.alt="Royal British Academy";
+  const img=new Image(); img.src="rba-arma.png"; img.alt="Royal British Academy";
   img.style.cssText="width:100%;height:100%;object-fit:contain";
   img.onload=()=>{el.innerHTML="";el.appendChild(img)};
   img.onerror=()=>{el.innerHTML=crestSVG()};
   el.innerHTML=crestSVG();
 }
+
+/* ═════════ DARK MODE ═════════ */
+(function(){
+  const btn=document.getElementById('themeToggle'); if(!btn) return;
+  const isDark=()=>document.documentElement.getAttribute('data-theme')==='dark';
+  const sync=()=>{btn.textContent=isDark()?'☀️':'🌙'};
+  sync();
+  btn.addEventListener('click',()=>{
+    if(isDark()){document.documentElement.removeAttribute('data-theme');try{localStorage.setItem('ydt-theme','light')}catch(e){}}
+    else{document.documentElement.setAttribute('data-theme','dark');try{localStorage.setItem('ydt-theme','dark')}catch(e){}}
+    sync();
+  });
+})();
 
 /* ═════════ DURUM ═════════ */
 let D=null, cur=0, marks={}, left=0, tick=null, who={}, startedAt=null, res=null;
