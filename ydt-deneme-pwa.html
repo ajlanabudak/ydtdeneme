@@ -203,21 +203,31 @@ footer .by b{color:var(--ink);font-weight:650}
 
 <!-- ANA SAYFA -->
 <section id="home" class="screen on">
-  <div class="hero"><div class="wrap hero-inner">
+  <div class="hero"><div class="wrap">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;color:#D9C293;
+    font-size:13px;font-weight:650;text-decoration:none;margin-bottom:14px;opacity:.9">
+    ← Giriş sayfası
+  </a>
+  <div class="hero-inner">
     <div class="crest-box" id="crestHero"></div>
     <div>
       <div class="kicker">ROYAL BRITISH ACADEMY</div>
       <h1 class="serif">YDT Deneme Sınavları</h1>
       <div class="sub">KeyKampüs Kurs Merkezi · YKS Yabancı Dil Testi</div>
     </div>
-  </div></div>
+  </div>
+</div></div>
   <div class="wrap">
     <div class="who"><div class="who-card">
       <div class="who-row">
         <input id="inAd" type="text" placeholder="Adın" autocomplete="given-name" enterkeyhint="next">
-        <input id="inSoyad" type="text" placeholder="Soyadın" autocomplete="family-name" enterkeyhint="done">
+        <input id="inSoyad" type="text" placeholder="Soyadın" autocomplete="family-name" enterkeyhint="next">
       </div>
-      <div class="who-note" id="whoNote">Adını yaz, sonra aşağıdan bir deneme seç.</div>
+      <div class="who-row" style="margin-top:9px">
+        <input id="inSifre" type="password" placeholder="Sınav şifresi" autocomplete="off"
+          inputmode="text" enterkeyhint="done" style="letter-spacing:2px">
+      </div>
+      <div class="who-note" id="whoNote">Adını, soyadını ve öğretmeninin verdiği sınav şifresini yaz.</div>
     </div></div>
     <div id="netBar"></div>
     <div id="pendingBox"></div>
@@ -24209,6 +24219,8 @@ const KVKK_AYAR = {
 };
 
 /* ═════════ AYARLAR ═════════ */
+const SINAV_SIFRESI = "YDT2027";   // öğretmenin sınav günü öğrencilere söylediği şifre
+
 const CFG = {
   YEREL_MOD: false,        // true: hiçbir veri buluta gitmez, sonuçlar dosyayla toplanır
   KURUM_CIHAZI: true,      // true: sınav bitince ad-soyad cihazdan silinir (ortak tabletler için)
@@ -24384,6 +24396,7 @@ async function buildHome(){
   ['inAd','inSoyad'].forEach(id=>$(id).addEventListener('input',()=>{
     store(LS.who,{ad:$('inAd').value.trim(),soyad:$('inSoyad').value.trim()}); updateWhoNote();
   }));
+  $('inSifre').addEventListener('input',()=>{ $('inSifre').style.borderColor=''; });
   updateWhoNote();
   const mn=$('modNot');
   if(mn) mn.innerHTML = CFG.YEREL_MOD
@@ -24479,7 +24492,13 @@ async function denediMi(kod,no){
 }
 async function startExam(n){
   const ad=$('inAd').value.trim(), soyad=$('inSoyad').value.trim();
+  const sifre=$('inSifre').value.trim();
   if(!ad||!soyad){toast('Önce adını ve soyadını yaz.');$('inAd').focus();return}
+  if(sifre !== SINAV_SIFRESI){
+    toast('Sınav şifresi yanlış. Öğretmenine sor.');
+    $('inSifre').style.borderColor='var(--bad)'; $('inSifre').focus();
+    return;
+  }
   if(AKTIF && !AKTIF[n]){toast('Bu deneme şu anda yayında değil.');return}
   // KVKK: bilgilendirme görülmeden sınav başlamaz
   if(!kvkkOnayliMi()){ kvkkHedefDeneme = n; kvkkGoster(false); return; }
