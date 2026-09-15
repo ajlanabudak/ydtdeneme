@@ -178,6 +178,7 @@ footer .by{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
             <option value="tarih">En yeni</option>
             <option value="ad">Ada göre</option>
           </select>
+          <button class="btn btn-sm btn-line" onclick="topluPdf()">PDF'e aktar</button>
         </div>
         <div class="kpis" id="resKpi"></div>
         <div class="tbl-scroll"><table>
@@ -362,10 +363,10 @@ const SECNAME = {kelime:"Kelime",gramer:"Dil bilgisi",cloze:"Cloze","cumle-tamam
   okuma:"Okuma",diyalog:"Diyalog","anlamca-yakin":"Anlamca yakın",durum:"Durum",
   "paragraf-tamamlama":"Paragraf tamamlama","ing-tr":"İng→Tr","tr-ing":"Tr→İng","akis-bozan":"Akışı bozan"};
 
-let EXAMS=[], RESULTS=[], QSTATS=[];
+let EXAMS=[], RESULTS=[], QSTATS=[], CURRENT_ROWS=[], SON_RAPOR=null;
 
 function $(i){return document.getElementById(i)}
-function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function toast(m,ms=2500){const t=$('toast');t.textContent=m;t.classList.add('on');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),ms)}
 function fmtSure(sn){if(sn==null)return '—';const m=Math.floor(sn/60);return m+' dk'}
@@ -680,20 +681,23 @@ async function talepBul(){
   if(!ad||!soyad){ el.innerHTML='<div class="note">Ad ve soyadı gir.</div>'; return; }
   if(!ANAHTAR_TUZ){ el.innerHTML='<div class="note">Önce özel anahtar dosyasını yükle (tuz o dosyada).</div>'; return; }
   const no = await YDT_KVKK.takmaKimlik(ad, soyad, ANAHTAR_TUZ);
-  const {data,error} = await sb.rpc('ydt_ogrenci_disa_aktar',{p_no:no});
+  const {data,error} = await sb.from('ydt_attempts').select('*').eq('ogrenci_no',no).order('created_at');
   if(error){ el.innerHTML='<div class="note">Hata: '+esc(error.message)+'</div>'; return; }
   const kayit = data||[];
+  const adSoyad = (ad+' '+soyad).trim();
   el.innerHTML = `
     <div class="note" style="margin-bottom:10px">
       <b>${esc(ad)} ${esc(soyad)}</b> · takma kimlik <code>${esc(no)}</code> ·
       <b>${kayit.length}</b> deneme kaydı bulundu.</div>
     ${kayit.length?`<div style="display:flex;gap:9px;flex-wrap:wrap">
-      <button class="btn btn-sm btn-line" onclick='talepAktar(${JSON.stringify(no)},${JSON.stringify(ad+" "+soyad)})'>
-        Kopyasını indir (erişim talebi)</button>
-      <button class="btn btn-sm btn-line" style="border-color:var(--bad);color:var(--bad)"
-        onclick='talepSil(${JSON.stringify(no)},${JSON.stringify(ad+" "+soyad)})'>
+      <button class="btn btn-sm btn-line" id="btnTalepAktar">Kopyasını indir (erişim talebi)</button>
+      <button class="btn btn-sm btn-line" id="btnTalepSil" style="border-color:var(--bad);color:var(--bad)">
         Tüm kayıtlarını sil (silme talebi)</button></div>`:''}`;
   el._veri = kayit;
+  if(kayit.length){
+    $('btnTalepAktar').onclick = ()=>talepAktar(no, adSoyad);
+    $('btnTalepSil').onclick = ()=>talepSil(no, adSoyad);
+  }
 }
 async function talepAktar(no, adSoyad){
   const veri = $('talepSonuc')._veri || [];
@@ -850,6 +854,7 @@ function renderResults(){
     s==='net'?b.net-a.net : s==='netAsc'?a.net-b.net :
     s==='ad'?adGoster(a).localeCompare(adGoster(b),'tr') :
     new Date(b.created_at)-new Date(a.created_at));
+  CURRENT_ROWS = rows;
   const nets=rows.map(r=>Number(r.net));
   const ort=nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length):0;
   const enY=nets.length?Math.max(...nets):0, enD=nets.length?Math.min(...nets):0;
@@ -861,7 +866,7 @@ function renderResults(){
     <div class="kpi bad"><b>${enD.toFixed(2).replace('.',',')}</b><span>En düşük</span></div>
     <div class="kpi"><b>${zd}</b><span>Süresi doldu</span></div>`;
   $('resRows').innerHTML = rows.length ? rows.map(r=>`
-    <tr class="click" onclick='openReport(${JSON.stringify(r.id)})'>
+    <tr class="click" data-id="${esc(r.id)}">
       <td>${esc(adGoster(r))}</td>
       <td class="num">${r.deneme_no}</td>
       <td class="num" style="color:var(--good)">${r.dogru}</td>
@@ -875,6 +880,10 @@ function renderResults(){
 }
 
 /* ═══ ÖĞRENCİ RAPORU ═══ */
+$('resRows').addEventListener('click', e=>{
+  const tr = e.target.closest('tr[data-id]');
+  if(tr) openReport(tr.dataset.id);
+});
 async function openReport(id){
   const r = RESULTS.find(x=>x.id===id); if(!r) return;
   let ans;
@@ -885,13 +894,17 @@ async function openReport(id){
   const zayif = Object.entries(kume).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),v}))
     .filter(x=>x.v.t>=2).sort((a,b)=>a.p-b.p).slice(0,5);
   const yanlisSorular = (ans||[]).filter(a=>a.sonuc!=='dogru');
+  SON_RAPOR = {r, zayif, yanlisSorular};
   $('modalIn').innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px">
       <div>
         <h2 class="serif" style="font-size:19px">${esc(adGoster(r))}</h2>
         <div class="note">Deneme ${r.deneme_no} · ${fmtTarih(r.finished_at||r.created_at)}</div>
       </div>
-      <button class="btn btn-sm btn-line" onclick="closeModal()">Kapat</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-line" onclick="ogrenciPdf()">PDF indir</button>
+        <button class="btn btn-sm btn-line" onclick="closeModal()">Kapat</button>
+      </div>
     </div>
     <div class="kpis">
       <div class="kpi lion"><b>${Number(r.net).toFixed(2).replace('.',',')}</b><span>Net</span></div>
@@ -944,32 +957,159 @@ async function openReport(id){
 }
 function closeModal(){$('modal').classList.remove('on')}
 
+/* ═══ PDF RAPOR (yazdır → tarayıcıdan "PDF olarak kaydet") ═══ */
+function pdfAc(baslik, govde){
+  const win = window.open('', '_blank');
+  if(!win){ toast('Açılır pencere engellendi; tarayıcı adres çubuğundan izin ver.', 4000); return; }
+  win.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>${esc(baslik)}</title>
+<style>
+@page{margin:16mm}
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#16202E;margin:0;padding:0 4px}
+.serif{font-family:Georgia,"Iowan Old Style",serif}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+  border-bottom:2px solid #2A0E4F;padding-bottom:14px;margin-bottom:16px}
+.hdr .brand{font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#6B3FA0;font-weight:700}
+.hdr h1{font-size:19px;margin:2px 0 4px}
+.hdr .meta{font-size:11px;color:#5E6B7C}
+.badge{width:66px;height:66px;border-radius:50%;border:3px solid #6B3FA0;flex:0 0 66px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.badge b{font-size:17px;color:#2A0E4F;line-height:1.05}
+.badge span{font-size:7.5px;color:#6B3FA0;letter-spacing:.4px;margin-top:2px}
+.kpis{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}
+.kpi{background:#F7F3EA;border:1px solid #DFD8CA;border-radius:9px;padding:8px 13px;min-width:74px}
+.kpi b{display:block;font-size:17px;color:#2A0E4F}
+.kpi span{font-size:9px;color:#5E6B7C;text-transform:uppercase;letter-spacing:.3px}
+.callout{background:#F3EEF9;border:1px solid #DDD0EE;border-left:4px solid #6B3FA0;
+  border-radius:8px;padding:11px 13px;margin:14px 0;font-size:12px;line-height:1.6}
+.callout b{color:#2A0E4F}
+h2.sec{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#6B3FA0;
+  border-bottom:1px solid #DFD8CA;padding-bottom:5px;margin:18px 0 9px}
+table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid #DFD8CA}
+th{font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#5E6B7C}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar{background:#EDE7DB;border-radius:4px;height:6px;width:80px;display:inline-block;vertical-align:middle;overflow:hidden}
+.bar i{display:block;height:100%;background:#4F7A5B}
+.bar i.mid{background:#C9862A}.bar i.low{background:#B3402F}
+footer{margin-top:22px;padding-top:10px;border-top:1px solid #DFD8CA;font-size:9.5px;color:#5E6B7C;
+  text-align:center;line-height:1.7}
+tr{page-break-inside:avoid}
+</style></head><body>${govde}
+<footer>Royal British Academy · KeyKampüs Kurs Merkezi<br>
+Bu belge kişisel veri içerir; KVKK kapsamında güvenli saklanmalı, gereksiz paylaşılmamalıdır.<br>
+Oluşturulma: ${fmtTarih(new Date().toISOString())}</footer>
+</body></html>`);
+  win.document.close();
+  setTimeout(()=>{ try{ win.focus(); win.print(); }catch(e){} }, 350);
+}
+function ogrenciRaporGovde(r, zayif, yanlisSorular){
+  const net = Number(r.net).toFixed(2).replace('.',',');
+  const yuzde = Math.round(100*(r.dogru||0)/Math.max(1,(r.dogru||0)+(r.yanlis||0)+(r.bos||0)));
+  return `
+  <div class="hdr">
+    <div>
+      <div class="brand">Royal British Academy</div>
+      <h1 class="serif">YDT Deneme Sonuç Raporu</h1>
+      <div class="meta">${esc(adGoster(r))} · KeyKampüs · Deneme ${r.deneme_no} · ${fmtTarih(r.finished_at||r.created_at)}</div>
+    </div>
+    <div class="badge"><b>${net}</b><span>NET</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>${r.dogru}</b><span>Doğru</span></div>
+    <div class="kpi"><b>${r.yanlis}</b><span>Yanlış</span></div>
+    <div class="kpi"><b>${r.bos}</b><span>Boş</span></div>
+    <div class="kpi"><b>${fmtSure(r.sure_kullanilan_sn)}</b><span>Süre</span></div>
+    <div class="kpi"><b>%${yuzde}</b><span>Başarı</span></div>
+  </div>
+  <div class="callout">
+    <b>Cevap değiştirme:</b> Toplam ${r.degisiklik_toplam||0} değişiklik, ${r.degisen_soru_sayisi||0} soruda.
+    Yanlıştan doğruya ${r.dyd_yanlis_dogru||0}, doğrudan yanlışa ${r.dyd_dogru_yanlis||0}.
+    Net etki: ${((r.dyd_yanlis_dogru||0)-(r.dyd_dogru_yanlis||0))>=0?'+':''}${(r.dyd_yanlis_dogru||0)-(r.dyd_dogru_yanlis||0)} soru.
+  </div>
+  <h2 class="sec">Öncelikli Çalışma Alanları</h2>
+  <table><thead><tr><th>Beceri</th><th class="n">Başarı</th><th></th></tr></thead><tbody>
+  ${zayif.length ? zayif.map(x=>{
+    const info=(window.YDT_REHBER.kumeBilgi(x.k)||{});
+    return `<tr><td>${esc(info.ad||x.k)}<div style="font-size:10px;color:#5E6B7C;margin-top:2px">${esc(info.calis||'')}</div></td>
+      <td class="n">${x.v.d}/${x.v.t} · %${x.p}</td><td>${barHtml(x.p)}</td></tr>`;
+  }).join('') : '<tr><td colspan="3">Belirgin zayıf alan yok.</td></tr>'}
+  </tbody></table>
+  <h2 class="sec">Yanlış ve Boş Sorular (${yanlisSorular.length})</h2>
+  <table><thead><tr><th class="n">Soru</th><th>Bölüm</th><th>Doğru</th><th>Verilen</th></tr></thead><tbody>
+  ${yanlisSorular.length ? yanlisSorular.map(a=>`<tr><td class="n">${a.soru_no}</td>
+    <td>${esc(SECNAME[a.bolum]||a.bolum)}</td>
+    <td style="color:#4F7A5B;font-weight:650">${a.dogru_cevap}</td>
+    <td style="color:#B3402F">${a.verilen_cevap||'boş'}</td></tr>`).join('') : '<tr><td colspan="4">Yanlış yok.</td></tr>'}
+  </tbody></table>`;
+}
+function ogrenciPdf(){
+  if(!SON_RAPOR) return;
+  const {r, zayif, yanlisSorular} = SON_RAPOR;
+  pdfAc('YDT Rapor — '+adGoster(r), ogrenciRaporGovde(r, zayif, yanlisSorular));
+}
+
+function topluPdf(){
+  const rows = CURRENT_ROWS;
+  if(!rows.length){ toast('Aktarılacak sonuç yok.'); return; }
+  const nets=rows.map(r=>Number(r.net));
+  const ort=(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(2).replace('.',',');
+  const enY=Math.max(...nets).toFixed(2).replace('.',','), enD=Math.min(...nets).toFixed(2).replace('.',',');
+  const dnFiltre = $('fDeneme').value ? 'Deneme '+$('fDeneme').value : 'Tüm denemeler';
+  const govde = `
+  <div class="hdr">
+    <div>
+      <div class="brand">Royal British Academy</div>
+      <h1 class="serif">YDT Deneme — Toplu Sonuç Raporu</h1>
+      <div class="meta">KeyKampüs · ${esc(dnFiltre)} · ${fmtTarih(new Date().toISOString())}</div>
+    </div>
+    <div class="badge"><b>${rows.length}</b><span>OTURUM</span></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><b>${ort}</b><span>Ortalama net</span></div>
+    <div class="kpi"><b>${enY}</b><span>En yüksek</span></div>
+    <div class="kpi"><b>${enD}</b><span>En düşük</span></div>
+    <div class="kpi"><b>${rows.filter(r=>r.zaman_doldu).length}</b><span>Süresi doldu</span></div>
+  </div>
+  <h2 class="sec">Öğrenci Sonuçları</h2>
+  <table><thead><tr><th>Öğrenci</th><th class="n">Dn</th><th class="n">D</th><th class="n">Y</th>
+    <th class="n">B</th><th class="n">Net</th><th class="n">Süre</th><th>Tarih</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${esc(adGoster(r))}</td><td class="n">${r.deneme_no}</td>
+    <td class="n">${r.dogru}</td><td class="n">${r.yanlis}</td><td class="n">${r.bos}</td>
+    <td class="n"><b>${Number(r.net).toFixed(2).replace('.',',')}</b></td>
+    <td class="n">${fmtSure(r.sure_kullanilan_sn)}</td><td>${fmtTarih(r.finished_at||r.created_at)}</td></tr>`).join('')}
+  </tbody></table>`;
+  pdfAc('YDT Toplu Rapor', govde);
+}
+
 /* ═══ SORU ANALİZİ ═══ */
+function agregeSoru(dn, cevaplar){
+  const m={};
+  cevaplar.forEach(a=>{
+    const k=a.soru_no;
+    m[k]=m[k]||{deneme_no:+dn,soru_no:k,bolum:a.bolum,kume:a.kume,
+      cozen:0,dogru:0,yanlis:0,bos:0,toplam_degisiklik:0,dogruyu_bozdu:0,duzeltti:0,sure:0};
+    const o=m[k]; o.cozen++;
+    if(a.sonuc==='dogru')o.dogru++; else if(a.sonuc==='yanlis')o.yanlis++; else o.bos++;
+    o.toplam_degisiklik+=a.degisiklik||0;
+    if(a.degisiklik>0 && a.ilk_dogru_muydu && a.sonuc!=='dogru') o.dogruyu_bozdu++;
+    if(a.degisiklik>0 && !a.ilk_dogru_muydu && a.sonuc==='dogru') o.duzeltti++;
+    o.sure+=a.sure_sn||0;
+  });
+  return Object.values(m).map(o=>({...o,
+    basari_yuzde:Math.round(1000*o.dogru/Math.max(1,o.cozen))/10,
+    ort_sure_sn:Math.round(10*o.sure/Math.max(1,o.cozen))/10}));
+}
 async function loadQuestions(){
   const dn=$('qDeneme').value; if(!dn)return;
   if(yerelMi()){
-    const m={};
-    yerelYukle().filter(r=>String(r.deneme_no)===String(dn)).forEach(r=>{
-      (r._cevaplar||[]).forEach(a=>{
-        const k=a.soru_no;
-        m[k]=m[k]||{deneme_no:+dn,soru_no:k,bolum:a.bolum,kume:a.kume,
-          cozen:0,dogru:0,yanlis:0,bos:0,toplam_degisiklik:0,dogruyu_bozdu:0,duzeltti:0,sure:0};
-        const o=m[k]; o.cozen++;
-        if(a.sonuc==='dogru')o.dogru++; else if(a.sonuc==='yanlis')o.yanlis++; else o.bos++;
-        o.toplam_degisiklik+=a.degisiklik||0;
-        if(a.degisiklik>0 && a.ilk_dogru_muydu && a.sonuc!=='dogru') o.dogruyu_bozdu++;
-        if(a.degisiklik>0 && !a.ilk_dogru_muydu && a.sonuc==='dogru') o.duzeltti++;
-        o.sure+=a.sure_sn||0;
-      });
-    });
-    QSTATS=Object.values(m).map(o=>({...o,
-      basari_yuzde:Math.round(1000*o.dogru/Math.max(1,o.cozen))/10,
-      ort_sure_sn:Math.round(10*o.sure/Math.max(1,o.cozen))/10}));
-    renderQuestions(); return;
+    const cevaplar=[];
+    yerelYukle().filter(r=>String(r.deneme_no)===String(dn)).forEach(r=>cevaplar.push(...(r._cevaplar||[])));
+    QSTATS=agregeSoru(dn, cevaplar); renderQuestions(); return;
   }
-  const {data,error}=await sb.from('ydt_soru_istatistik').select('*').eq('deneme_no',dn);
+  const {data,error}=await sb.from('ydt_answers').select('*').eq('deneme_no',dn);
   if(error){toast('Alınamadı: '+error.message);return}
-  QSTATS=data||[]; renderQuestions();
+  QSTATS=agregeSoru(dn, data||[]); renderQuestions();
 }
 function renderQuestions(){
   const R=window.YDT_REHBER, s=$('qSort').value;
@@ -992,40 +1132,28 @@ function renderQuestions(){
 }
 
 /* ═══ BECERİ HARİTASI ═══ */
-async function loadKume(){
-  if(yerelMi()){
-    const f=$('kDeneme')?$('kDeneme').value:'';
-    const agg={};
-    yerelYukle().filter(r=>!f||String(r.deneme_no)===String(f)).forEach(r=>{
-      Object.entries(r.kume_analizi||{}).forEach(([k,v])=>{
-        agg[k]=agg[k]||{d:0,t:0}; agg[k].d+=v.d; agg[k].t+=v.t;
-      });
+function agregeKume(kumeAnalizList){
+  const agg={};
+  kumeAnalizList.forEach(ka=>{
+    Object.entries(ka||{}).forEach(([k,v])=>{
+      agg[k]=agg[k]||{d:0,t:0}; agg[k].d+=v.d; agg[k].t+=v.t;
     });
-    const R=window.YDT_REHBER;
-    const list=Object.entries(agg).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),n:v.t}))
-      .sort((a,b)=>a.p-b.p);
-    $('kumeList').innerHTML = list.length ? list.map((x,i)=>{
-      const info=R.kumeBilgi(x.k);
-      return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
-        <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:600">
-          <span>${i<3?'⚠ ':''}${esc(info?info.ad:x.k)}</span>
-          <span style="font-variant-numeric:tabular-nums">%${x.p} · ${x.n} cevap</span></div>
-        ${barHtml(x.p)}
-        ${i<3&&info?`<div class="note" style="margin-top:7px"><b>Sınıfa öneri:</b> ${info.calis}</div>`:''}
-      </div>`}).join('') : '<div class="empty">Henüz veri yok.</div>';
-    return;
-  }
-  let q=sb.from('ydt_kume_istatistik').select('*');
-  const f=$('kDeneme').value; if(f) q=q.eq('deneme_no',f);
-  const {data,error}=await q;
-  if(error){toast('Alınamadı: '+error.message);return}
-  const R=window.YDT_REHBER, agg={};
-  (data||[]).forEach(r=>{
-    agg[r.kume]=agg[r.kume]||{n:0,top:0};
-    agg[r.kume].n+=r.soru_cevap; agg[r.kume].top+=r.basari_yuzde*r.soru_cevap;
   });
-  const list=Object.entries(agg).map(([k,v])=>({k,p:Math.round(v.top/v.n),n:v.n}))
-    .sort((a,b)=>a.p-b.p);
+  return Object.entries(agg).map(([k,v])=>({k,p:Math.round(100*v.d/v.t),n:v.t})).sort((a,b)=>a.p-b.p);
+}
+async function loadKume(){
+  const f=$('kDeneme')?$('kDeneme').value:'';
+  let list;
+  if(yerelMi()){
+    list = agregeKume(yerelYukle().filter(r=>!f||String(r.deneme_no)===String(f)).map(r=>r.kume_analizi||{}));
+  } else {
+    let q=sb.from('ydt_attempts').select('kume_analizi');
+    if(f) q=q.eq('deneme_no',f);
+    const {data,error}=await q;
+    if(error){toast('Alınamadı: '+error.message);return}
+    list = agregeKume((data||[]).map(r=>r.kume_analizi||{}));
+  }
+  const R=window.YDT_REHBER;
   $('kumeList').innerHTML = list.length ? list.map((x,i)=>{
     const info=R.kumeBilgi(x.k);
     return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
@@ -1034,26 +1162,31 @@ async function loadKume(){
         <span style="font-variant-numeric:tabular-nums">%${x.p} · ${x.n} cevap</span></div>
       ${barHtml(x.p)}
       ${i<3&&info?`<div class="note" style="margin-top:7px"><b>Sınıfa öneri:</b> ${info.calis}</div>`:''}
-    </div>`}).join('')
-    : '<div class="empty">Henüz veri yok.</div>';
+    </div>`}).join('') : '<div class="empty">Henüz veri yok.</div>';
 }
 
 /* ═══ DEĞİŞİM ═══ */
+function agregeDegisim(attemptList){
+  const m={};
+  attemptList.forEach(r=>{
+    const k=r.ogrenci_no;
+    m[k]=m[k]||{ogrenci_no:k,kazanilan:0,kaybedilen:0,notr:0,deneme_sayisi:0};
+    m[k].kazanilan+=r.dyd_yanlis_dogru||0; m[k].kaybedilen+=r.dyd_dogru_yanlis||0;
+    m[k].notr+=r.dyd_yanlis_yanlis||0; m[k].deneme_sayisi++;
+  });
+  return Object.values(m).map(o=>({...o,net_kazanc:o.kazanilan-o.kaybedilen}));
+}
 async function loadDegisim(){
   let data;
   if(yerelMi()){
-    const m={};
-    yerelYukle().forEach(r=>{
-      const k=r._kimlik;
-      m[k]=m[k]||{ogrenci_no:k,_ad:r._ad,_soyad:r._soyad,kazanilan:0,kaybedilen:0,notr:0,deneme_sayisi:0};
-      m[k].kazanilan+=r.dyd_yanlis_dogru||0; m[k].kaybedilen+=r.dyd_dogru_yanlis||0;
-      m[k].notr+=r.dyd_yanlis_yanlis||0; m[k].deneme_sayisi++;
-    });
-    data=Object.values(m).map(o=>({...o,net_kazanc:o.kazanilan-o.kaybedilen}));
-    data.forEach(o=>AD_ONBELLEK.set(o.ogrenci_no,(o._ad+' '+o._soyad).trim()));
+    const yuk = yerelYukle();
+    data = agregeDegisim(yuk.map(r=>({...r, ogrenci_no:r._kimlik})));
+    yuk.forEach(r=>AD_ONBELLEK.set(r._kimlik,(r._ad+' '+r._soyad).trim()));
   } else {
-    const r=await sb.from('ydt_degisiklik_ozet').select('*');
-    if(r.error){return} data=r.data;
+    const {data:rows,error} = await sb.from('ydt_attempts')
+      .select('ogrenci_no,dyd_yanlis_dogru,dyd_dogru_yanlis,dyd_yanlis_yanlis');
+    if(error){toast('Alınamadı: '+error.message);return}
+    data = agregeDegisim(rows||[]);
   }
   const rows=(data||[]).sort((a,b)=>a.net_kazanc-b.net_kazanc);
   $('dRows').innerHTML = rows.length ? rows.map(r=>{
